@@ -1,0 +1,11 @@
+set(META_VERSION "@PROJECT_VERSION@")
+
+@PACKAGE_INIT@
+
+set_and_check(META_INCLUDE_DIRS "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+
+if(NOT CMAKE_VERSION VERSION_LESS "3.0")
+    include("${CMAKE_CURRENT_LIST_DIR}/metaTargets.cmake")
+endif()
+
+check_required_components("@PROJECT_NAME@")

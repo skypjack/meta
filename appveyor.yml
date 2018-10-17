@@ -1,0 +1,22 @@
+# can use variables like {build} and {branch}
+version: 1.0.{build}
+
+image: Visual Studio 2017
+
+environment:
+  BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\\build"
+
+platform:
+  - Win32
+
+configuration:
+  - Release
+
+before_build:
+  - cd %BUILD_DIR%
+  - cmake .. -DCMAKE_CXX_FLAGS=/W1 -G"Visual Studio 15 2017"
+
+build:
+  parallel: true
+  project: build/meta.sln
+  verbosity: minimal
