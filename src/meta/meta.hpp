@@ -1511,7 +1511,7 @@ class type final {
     template<typename> friend class factory;
 
     /*! @brief A meta node is allowed to create meta objects. */
-    template<typename Type> friend internal::type_node * internal::info_node<Type>::resolve() noexcept;
+    template<typename...> friend struct internal::info_node;
 
     inline type(const internal::type_node *node) noexcept
         : node{node}
