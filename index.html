@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.0.0</span>
+   &#160;<span id="projectnumber">1.1.0</span>
    </div>
   </td>
  </tr>
@@ -124,7 +124,9 @@ Reflection in a nutshell</h2>
 <li><em>Data members</em>. Both real data members of the underlying type and static and global variables, as well as constants of any kind, can be attached to a meta type. From a client's point of view, all the variables associated with the reflected type will appear as if they were part of the type itself.<br />
  Use the <code>data</code> member function for this purpose:</li>
 </ul>
-<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>)</div><div class="line">    .data&lt;&amp;my_type::static_variable&gt;(<span class="stringliteral">&quot;static&quot;</span>)</div><div class="line">    .data&lt;&amp;my_type::data_member&gt;(<span class="stringliteral">&quot;member&quot;</span>)</div><div class="line">    .data&lt;&amp;global_variable&gt;(<span class="stringliteral">&quot;global&quot;</span>);</div></div><!-- fragment --><p>This function requires as an argument the name to give to the meta data once created. Users can then access meta data at runtime by searching for them by name.</p>
+<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>)</div><div class="line">    .data&lt;&amp;my_type::static_variable&gt;(<span class="stringliteral">&quot;static&quot;</span>)</div><div class="line">    .data&lt;&amp;my_type::data_member&gt;(<span class="stringliteral">&quot;member&quot;</span>)</div><div class="line">    .data&lt;&amp;global_variable&gt;(<span class="stringliteral">&quot;global&quot;</span>);</div></div><!-- fragment --><p>This function requires as an argument the name to give to the meta data once created. Users can then access meta data at runtime by searching for them by name.<br />
+ Data members can be set also by means of a couple of functions, namely a setter and a getter. Setters and getters can be either free functions, member functions or mixed ones, as long as they respect the required signatures.<br />
+ Refer to the inline documentation for all the details.</p>
 <ul>
 <li><em>Member functions</em>. Both real member functions of the underlying type and free functions can be attached to a meta type. From a client's point of view, all the functions associated with the reflected type will appear as if they were part of the type itself.<br />
  Use the <code>func</code> member function for this purpose:</li>
