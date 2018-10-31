@@ -282,8 +282,8 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto *Func>
-    std::enable_if_t<std::is_invocable_v<decltype(Func), Type &>, factory &>
-    dtor() noexcept {
+    factory & dtor() noexcept {
+        static_assert(std::is_invocable_v<decltype(Func), Type &>);
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::dtor_node node{
@@ -370,6 +370,57 @@ public:
 
         return *this;
     }
+
+    /**
+     * @brief Assigns a meta data to a meta type by means of its setter and
+     * getter.
+     *
+     * Setters and getters can be either free functions, member functions or a
+     * mix of them.<br/>
+     * In case of free functions, setters and getters must accept an instance of
+     * the parent type as their first argument. A setter has then an extra
+     * argument of a type convertible to that of the parameter to set.<br/>
+     * In case of member functions, getters have no arguments at all, while
+     * setters has an argument of a type convertible to that of the parameter to
+     * set.
+     *
+     * @tparam Setter The actual function to use as a setter.
+     * @tparam Getter The actual function to use as a getter.
+     * @tparam Property Types of properties to assign to the meta data.
+     * @param str The name to assign to the meta data.
+     * @param property Properties to assign to the meta data.
+     * @return A meta factory for the parent type.
+     */
+    template<auto Setter, auto Getter, typename... Property>
+    factory & data(const char *str, Property &&... property) noexcept {
+        using data_type = std::invoke_result_t<decltype(Getter), Type &>;
+        static_assert(std::is_invocable_v<decltype(Setter), Type &, data_type>);
+        auto * const type = internal::type_info<Type>::resolve();
+
+        static internal::data_node node{
+            str,
+            std::hash<std::string>{}(str),
+            type->data,
+            type,
+            properties<std::tuple<decltype(Setter), decltype(Getter)>>(std::forward<Property>(property)...),
+            false,
+            false,
+            &internal::type_info<data_type>::resolve,
+            &internal::setter<false, Type, Setter>,
+            &internal::getter<Type, Getter>,
+            []() -> meta::data {
+                return &node;
+            }
+        };
+
+        assert(!duplicate(node.id, node.next));
+        assert((!internal::type_info<Type>::template data<Setter, Getter>));
+        internal::type_info<Type>::template data<Setter, Getter> = &node;
+        type->data = &node;
+
+        return *this;
+    }
+
 
     /**
      * @brief Assigns a meta funcion to a meta type.

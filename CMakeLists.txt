@@ -16,7 +16,7 @@ endif()
 # Project configuration
 #
 
-project(meta VERSION 1.0.0)
+project(meta VERSION 1.1.0)
 
 include(GNUInstallDirs)
 

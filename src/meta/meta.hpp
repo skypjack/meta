@@ -167,7 +167,7 @@ struct info_node<Type> {
     template<auto>
     inline static dtor_node *dtor = nullptr;
 
-    template<auto>
+    template<auto...>
     inline static data_node *data = nullptr;
 
     template<auto>
@@ -2060,18 +2060,38 @@ template<bool Const, typename Type, auto Data>
 bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any &any) {
     if constexpr(Const) {
         return false;
-    } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
-        using data_type = std::decay_t<decltype(std::declval<Type>().*Data)>;
-        static_assert(std::is_invocable_v<decltype(Data), Type>);
-        const bool accepted = any.can_cast<data_type>() || any.convert<data_type>();
-        auto *clazz = handle.try_cast<Type>();
+    } else if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_pointer_v<decltype(Data)>) {
+        auto execute = [&handle, &any](auto *tag) {
+            using data_type = std::remove_pointer_t<decltype(tag)>;
+            const bool accepted = any.can_cast<data_type>() || any.convert<data_type>();
+            auto *clazz = handle.try_cast<Type>();
 
-        if(accepted && clazz) {
-            clazz->*Data = any.cast<data_type>();
+            if(accepted && clazz) {
+                if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>>) {
+                    Data(*clazz, any.cast<data_type>());
+                } else if constexpr(std::is_member_function_pointer_v<decltype(Data)>) {
+                    (clazz->*Data)(any.cast<data_type>());
+                } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
+                    clazz->*Data = any.cast<data_type>();
+                }
+            }
+
+            return accepted;
+        };
+
+        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
+            using helper_type = function_helper<std::integral_constant<decltype(Data), Data>>;
+            using data_type = std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>;
+            data_type *tag = nullptr;
+            return execute(tag);
+        } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
+            using data_type = std::decay_t<decltype(std::declval<Type>().*Data)>;
+            static_assert(std::is_invocable_v<decltype(Data), Type>);
+            data_type *tag = nullptr;
+            return execute(tag);
         }
-
-        return accepted;
     } else {
+        static_assert(std::is_pointer_v<decltype(Data)>);
         using data_type = std::decay_t<decltype(*Data)>;
         const bool accepted = any.can_cast<data_type>() || any.convert<data_type>();
 
@@ -2086,11 +2106,19 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any &any) {
 
 template<typename Type, auto Data>
 inline any getter([[maybe_unused]] handle handle) {
-    if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
-        static_assert(std::is_invocable_v<decltype(Data), Type>);
+    if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_pointer_v<decltype(Data)>) {
+        static_assert(std::is_invocable_v<decltype(Data), Type &>);
         auto *clazz = handle.try_cast<Type>();
-        return clazz ? any{clazz->*Data} : any{};
+
+        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>>) {
+            return clazz ? any{Data(*clazz)} : any{};
+        } else if constexpr(std::is_member_function_pointer_v<decltype(Data)>) {
+            return clazz ? any{(clazz->*Data)()} : any{};
+        } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
+            return clazz ? any{clazz->*Data} : any{};
+        }
     } else {
+        static_assert(std::is_pointer_v<decltype(Data)>);
         return any{*Data};
     }
 }
