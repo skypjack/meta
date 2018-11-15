@@ -130,7 +130,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<typename Base>
-    factory & base() noexcept {
+    factory base() noexcept {
         static_assert(std::is_base_of_v<Base, Type>);
         auto * const type = internal::type_info<Type>::resolve();
 
@@ -163,7 +163,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<typename To>
-    factory & conv() noexcept {
+    factory conv() noexcept {
         static_assert(std::is_convertible_v<Type, std::decay_t<To>>);
         auto * const type = internal::type_info<Type>::resolve();
 
@@ -201,7 +201,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto Func, typename... Property>
-    factory & ctor(Property &&... property) noexcept {
+    factory ctor(Property &&... property) noexcept {
         using helper_type = internal::function_helper<std::integral_constant<decltype(Func), Func>>;
         static_assert(std::is_same_v<typename helper_type::return_type, Type>);
         auto * const type = internal::type_info<Type>::resolve();
@@ -240,7 +240,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<typename... Args, typename... Property>
-    factory & ctor(Property &&... property) noexcept {
+    factory ctor(Property &&... property) noexcept {
         using helper_type = internal::function_helper<Type(Args...)>;
         auto * const type = internal::type_info<Type>::resolve();
 
@@ -282,7 +282,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto *Func>
-    factory & dtor() noexcept {
+    factory dtor() noexcept {
         static_assert(std::is_invocable_v<decltype(Func), Type &>);
         auto * const type = internal::type_info<Type>::resolve();
 
@@ -321,7 +321,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto Data, typename... Property>
-    factory & data(const char *str, Property &&... property) noexcept {
+    factory data(const char *str, Property &&... property) noexcept {
         auto * const type = internal::type_info<Type>::resolve();
 
         if constexpr(std::is_same_v<Type, decltype(Data)>) {
@@ -392,7 +392,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto Setter, auto Getter, typename... Property>
-    factory & data(const char *str, Property &&... property) noexcept {
+    factory data(const char *str, Property &&... property) noexcept {
         using data_type = std::invoke_result_t<decltype(Getter), Type &>;
         static_assert(std::is_invocable_v<decltype(Setter), Type &, data_type>);
         auto * const type = internal::type_info<Type>::resolve();
@@ -437,7 +437,7 @@ public:
      * @return A meta factory for the parent type.
      */
     template<auto Func, typename... Property>
-    factory & func(const char *str, Property &&... property) noexcept {
+    factory func(const char *str, Property &&... property) noexcept {
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::func_node node{
