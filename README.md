@@ -510,7 +510,7 @@ know who has participated so far.
 
 # License
 
-Code and documentation Copyright (c) 2018 Michele Caini.
+Code and documentation Copyright (c) 2018-2019 Michele Caini.
 
 Code released under
 [the MIT license](https://github.com/skypjack/meta/blob/master/LICENSE).
