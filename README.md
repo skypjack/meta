@@ -8,9 +8,9 @@
 [![Build Status](https://travis-ci.org/skypjack/meta.svg?branch=master)](https://travis-ci.org/skypjack/meta)
 [![Build status](https://ci.appveyor.com/api/projects/status/xs3bos4xl06y0wyv?svg=true)](https://ci.appveyor.com/project/skypjack/meta)
 [![Coverage Status](https://coveralls.io/repos/github/skypjack/meta/badge.svg?branch=master)](https://coveralls.io/github/skypjack/meta?branch=master)
-[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=W2HF9FESD5LJY&lc=IT&item_name=Michele%20Caini&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted)
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/skypjack)
 
-[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bePatron?u=11330786)
+[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bePatron?c=1772573)
 
 > The reflection system was born within [EnTT](https://github.com/skypjack/entt)
 > and is developed and enriched there. This project is designed for those who
@@ -538,7 +538,7 @@ If you want to support this project, you can offer me an espresso. I'm from
 Italy, we're used to turning the best coffee ever in code. If you find that
 it's not enough, feel free to support me the way you prefer.<br/>
 Take a look at the donation button at the top of the page for more details or
-just click [here](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=W2HF9FESD5LJY&lc=IT&item_name=Michele%20Caini&currency_code=EUR&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted).
+just click [here](https://www.paypal.me/skypjack).
 
 ## Hire me
 
