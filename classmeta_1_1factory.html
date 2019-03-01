@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.1.1</span>
+   &#160;<span id="projectnumber">1.2.0</span>
    </div>
   </td>
  </tr>
@@ -417,7 +417,8 @@ template&lt;auto Setter, auto Getter, typename... Property&gt; </div>
 <p>Assigns a meta data to a meta type by means of its setter and getter. </p>
 <p>Setters and getters can be either free functions, member functions or a mix of them.<br />
  In case of free functions, setters and getters must accept an instance of the parent type as their first argument. A setter has then an extra argument of a type convertible to that of the parameter to set.<br />
- In case of member functions, getters have no arguments at all, while setters has an argument of a type convertible to that of the parameter to set.</p>
+ In case of free functions, setters and getters must accept a pointer to an instance of the parent type as their first argument. A setter has then an extra argument of a type convertible to that of the parameter to set.<br />
+</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Setter</td><td>The actual function to use as a setter. </td></tr>
@@ -435,7 +436,7 @@ template&lt;auto Setter, auto Getter, typename... Property&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta factory for the parent type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00395">395</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00400">400</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -468,7 +469,7 @@ template&lt;auto * Func&gt; </div>
 
 <p>Assigns a meta destructor to a meta type. </p>
 <p>Free functions can be assigned to meta types in the role of destructors. The signature of the function should identical to the following:</p>
-<div class="fragment"><div class="line">void(Type &amp;);</div></div><!-- fragment --><p>From a client's point of view, nothing changes if the destructor of a meta type is the default one or a custom one.</p>
+<div class="fragment"><div class="line">void(Type *);</div></div><!-- fragment --><p>From a client's point of view, nothing changes if the destructor of a meta type is the default one or a custom one.</p>
 <dl class="tparams"><dt>Template Parameters</dt><dd>
   <table class="tparams">
     <tr><td class="paramname">Func</td><td>The actual function to use as a destructor. </td></tr>
@@ -538,7 +539,7 @@ template&lt;auto Func, typename... Property&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta factory for the parent type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00440">440</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00446">446</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -600,7 +601,7 @@ template&lt;typename Other , typename... Property&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta factory for the given type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00490">490</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00497">497</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
