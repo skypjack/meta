@@ -651,21 +651,6 @@ public:
         : handle{0, std::forward<Type>(instance)}
     {}
 
-    /*! @brief Default destructor. */
-    ~handle() noexcept = default;
-
-    /*! @brief Default copy constructor. */
-    handle(const handle &) noexcept = default;
-
-    /*! @brief Default move constructor. */
-    handle(handle &&) noexcept = default;
-
-    /*! @brief Default copy assignment operator. @return This handle. */
-    handle & operator=(const handle &) noexcept = default;
-
-    /*! @brief Default move assignment operator. @return This handle. */
-    handle & operator=(handle &&) noexcept = default;
-
     /**
      * @brief Returns the meta type of the underlying object.
      * @return The meta type of the underlying object, if any.
@@ -2058,45 +2043,38 @@ inline any construct(any * const args, std::index_sequence<Indexes...>) {
 
 template<bool Const, typename Type, auto Data>
 bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any &any) {
+    bool accepted = false;
+
     if constexpr(Const) {
-        return false;
-    } else if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_pointer_v<decltype(Data)>) {
-        auto execute = [&handle, &any](auto *tag) {
-            using data_type = std::remove_pointer_t<decltype(tag)>;
-            const bool accepted = any.can_cast<data_type>() || any.convert<data_type>();
+        return accepted;
+    } else {
+        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
+            using helper_type = function_helper<std::integral_constant<decltype(Data), Data>>;
+            using data_type = std::decay_t<std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>>;
+            static_assert(std::is_invocable_v<decltype(Data), Type *, data_type>);
+            accepted = any.can_cast<data_type>() || any.convert<data_type>();
             auto *clazz = handle.try_cast<Type>();
 
             if(accepted && clazz) {
-                if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>>) {
-                    Data(*clazz, any.cast<data_type>());
-                } else if constexpr(std::is_member_function_pointer_v<decltype(Data)>) {
-                    (clazz->*Data)(any.cast<data_type>());
-                } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
-                    clazz->*Data = any.cast<data_type>();
-                }
+                std::invoke(Data, clazz, any.cast<data_type>());
             }
-
-            return accepted;
-        };
-
-        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
-            using helper_type = function_helper<std::integral_constant<decltype(Data), Data>>;
-            using data_type = std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>;
-            data_type *tag = nullptr;
-            return execute(tag);
-        } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
+        } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
             using data_type = std::decay_t<decltype(std::declval<Type>().*Data)>;
             static_assert(std::is_invocable_v<decltype(Data), Type>);
-            data_type *tag = nullptr;
-            return execute(tag);
-        }
-    } else {
-        static_assert(std::is_pointer_v<decltype(Data)>);
-        using data_type = std::decay_t<decltype(*Data)>;
-        const bool accepted = any.can_cast<data_type>() || any.convert<data_type>();
+            accepted = any.can_cast<data_type>() || any.convert<data_type>();
+            auto *clazz = handle.try_cast<Type>();
 
-        if(accepted) {
-            *Data = any.cast<data_type>();
+            if(accepted && clazz) {
+                std::invoke(Data, clazz) = any.cast<data_type>();
+            }
+        } else {
+            static_assert(std::is_pointer_v<decltype(Data)>);
+            using data_type = std::decay_t<decltype(*Data)>;
+            accepted = any.can_cast<data_type>() || any.convert<data_type>();
+
+            if(accepted) {
+                *Data = any.cast<data_type>();
+            }
         }
 
         return accepted;
@@ -2107,16 +2085,9 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any &any) {
 template<typename Type, auto Data>
 inline any getter([[maybe_unused]] handle handle) {
     if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_pointer_v<decltype(Data)>) {
-        static_assert(std::is_invocable_v<decltype(Data), Type &>);
+        static_assert(std::is_invocable_v<decltype(Data), Type *>);
         auto *clazz = handle.try_cast<Type>();
-
-        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>>) {
-            return clazz ? any{Data(*clazz)} : any{};
-        } else if constexpr(std::is_member_function_pointer_v<decltype(Data)>) {
-            return clazz ? any{(clazz->*Data)()} : any{};
-        } else /* if constexpr(std::is_member_object_pointer_v<decltype(Data)>) */ {
-            return clazz ? any{clazz->*Data} : any{};
-        }
+        return clazz ? std::invoke(Data, clazz) : any{};
     } else {
         static_assert(std::is_pointer_v<decltype(Data)>);
         return any{*Data};
@@ -2134,9 +2105,9 @@ invoke(const handle &, any *args, std::index_sequence<Indexes...>) {
             || (args+Indexes)->convert<typename helper_type::template arg_type<Indexes>>()) && ...))
     {
         if constexpr(std::is_void_v<typename helper_type::return_type>) {
-            (*Func)((args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
+            std::invoke(Func, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
         } else {
-            ret = any{(*Func)((args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
+            ret = any{std::invoke(Func, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
         }
     }
 
@@ -2156,9 +2127,9 @@ invoke(handle &handle, any *args, std::index_sequence<Indexes...>) {
                   || (args+Indexes)->convert<typename helper_type::template arg_type<Indexes>>()) && ...))
     {
         if constexpr(std::is_void_v<typename helper_type::return_type>) {
-            (clazz->*Member)((args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
+            std::invoke(Member, clazz, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
         } else {
-            ret = any{(clazz->*Member)((args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
+            ret = any{std::invoke(Member, clazz, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
         }
     }
 
