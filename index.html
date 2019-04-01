@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.2.0</span>
+   &#160;<span id="projectnumber">1.3.0</span>
    </div>
   </td>
  </tr>
@@ -213,7 +213,13 @@ Properties and meta objects</h2>
  To attach a property to a meta object, no matter what as long as it supports properties, it is sufficient to provide an object at the time of construction such that <code>std::get&lt;0&gt;</code> and <code>std::get&lt;1&gt;</code> are valid for it. In other terms, the properties are nothing more than key/value pairs users can put in an <code>std::pair</code>. As an example:</p>
 <div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>, std::make_pair(<span class="stringliteral">&quot;tooltip&quot;</span>_hs, <span class="stringliteral">&quot;message&quot;</span>));</div></div><!-- fragment --><p>The meta objects that support properties offer then a couple of member functions named <code>prop</code> to iterate them at once and to search a specific property by key:</p>
 <div class="fragment"><div class="line"><span class="comment">// iterate all the properties of a meta type</span></div><div class="line">meta::resolve&lt;my_type&gt;().prop([](<a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop) {</div><div class="line">    <span class="comment">// ...</span></div><div class="line">});</div><div class="line"></div><div class="line"><span class="comment">// search for a given property by name</span></div><div class="line"><a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop = meta::resolve&lt;my_type&gt;().prop(<span class="stringliteral">&quot;tooltip&quot;</span>_hs);</div></div><!-- fragment --><p>Meta properties are objects having a fairly poor interface, all in all. They only provide the <code>key</code> and the <code>value</code> member functions to be used to retrieve the key and the value contained in the form of meta any objects, respectively.</p>
-<h1><a class="anchor" id="autotoc_md14"></a>
+<h2><a class="anchor" id="autotoc_md14"></a>
+Unregister types</h2>
+<p>A type registered with the reflection system can also be unregistered. This means unregistering all its data members, member functions, conversion functions and so on. However, the base classes won't be unregistered, since they don't necessarily depend on it. Similarly, implicitly generated types (as an example, the meta types implicitly generated for function parameters when needed) won't be unregistered.</p>
+<p>To unregister a type, users can use the <code>unregister</code> function from the global namespace:</p>
+<div class="fragment"><div class="line">meta::unregister&lt;my_type&gt;();</div></div><!-- fragment --><p>This function returns a boolean value that is true if the type is actually registered with the reflection system, false otherwise.<br />
+ The type can be re-registered later with a completely different name and form.</p>
+<h1><a class="anchor" id="autotoc_md15"></a>
 License</h1>
 <p>Code and documentation Copyright (c) 2018-2019 Michele Caini.</p>
 <p>Code released under <a href="https://github.com/skypjack/meta/blob/master/LICENSE">the MIT license</a>. Documentation released under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.<br />
