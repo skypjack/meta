@@ -178,6 +178,17 @@ struct Meta: public ::testing::Test {
                 .func<&concrete_type::f>("f");
     }
 
+    static void SetUpAfterUnregistration() {
+        meta::reflect<double>().conv<float>();
+
+        meta::reflect<derived_type>("my_type", std::make_pair(properties::prop_bool, false))
+                .ctor<>();
+
+        meta::reflect<another_abstract_type>("your_type")
+                .data<&another_abstract_type::j>("a_data_member")
+                .func<&another_abstract_type::h>("a_member_function");
+    }
+
     void SetUp() override {
         empty_type::counter = 0;
         func_type::value = 0;
@@ -617,7 +628,7 @@ TEST_F(Meta, MetaCtor) {
     ctor.prop([](auto prop) {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_EQ(prop.value(), false);
+        ASSERT_FALSE(prop.value().template cast<bool>());
     });
 
     ASSERT_FALSE(ctor.prop(properties::prop_int));
@@ -626,7 +637,7 @@ TEST_F(Meta, MetaCtor) {
 
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_bool);
-    ASSERT_EQ(prop.value(), false);
+    ASSERT_FALSE(prop.value().template cast<bool>());
 }
 
 TEST_F(Meta, MetaCtorFunc) {
@@ -1460,4 +1471,60 @@ TEST_F(Meta, ArithmeticTypeAndNamedConstants) {
 
     ASSERT_EQ(type.data("min").get({}).cast<unsigned int>(), 0u);
     ASSERT_EQ(type.data("max").get({}).cast<unsigned int>(), 100u);
+}
+
+TEST_F(Meta, Unregister) {
+    ASSERT_FALSE(meta::unregister<float>());
+    ASSERT_TRUE(meta::unregister<double>());
+    ASSERT_TRUE(meta::unregister<char>());
+    ASSERT_TRUE(meta::unregister<properties>());
+    ASSERT_TRUE(meta::unregister<unsigned int>());
+    ASSERT_TRUE(meta::unregister<base_type>());
+    ASSERT_TRUE(meta::unregister<derived_type>());
+    ASSERT_TRUE(meta::unregister<empty_type>());
+    ASSERT_TRUE(meta::unregister<fat_type>());
+    ASSERT_TRUE(meta::unregister<data_type>());
+    ASSERT_TRUE(meta::unregister<func_type>());
+    ASSERT_TRUE(meta::unregister<setter_getter_type>());
+    ASSERT_TRUE(meta::unregister<an_abstract_type>());
+    ASSERT_TRUE(meta::unregister<another_abstract_type>());
+    ASSERT_TRUE(meta::unregister<concrete_type>());
+    ASSERT_FALSE(meta::unregister<double>());
+
+    ASSERT_FALSE(meta::resolve("char"));
+    ASSERT_FALSE(meta::resolve("base"));
+    ASSERT_FALSE(meta::resolve("derived"));
+    ASSERT_FALSE(meta::resolve("empty"));
+    ASSERT_FALSE(meta::resolve("fat"));
+    ASSERT_FALSE(meta::resolve("data"));
+    ASSERT_FALSE(meta::resolve("func"));
+    ASSERT_FALSE(meta::resolve("setter_getter"));
+    ASSERT_FALSE(meta::resolve("an_abstract_type"));
+    ASSERT_FALSE(meta::resolve("another_abstract_type"));
+    ASSERT_FALSE(meta::resolve("concrete"));
+
+    Meta::SetUpAfterUnregistration();
+    meta::any any{42.};
+
+    ASSERT_TRUE(any);
+    ASSERT_FALSE(any.can_convert<int>());
+    ASSERT_TRUE(any.can_convert<float>());
+
+    ASSERT_FALSE(meta::resolve("derived"));
+    ASSERT_TRUE(meta::resolve("my_type"));
+
+    meta::resolve<derived_type>().prop([](auto prop) {
+        ASSERT_TRUE(prop);
+        ASSERT_EQ(prop.key(), properties::prop_bool);
+        ASSERT_FALSE(prop.value().template cast<bool>());
+    });
+
+    ASSERT_FALSE((meta::resolve<derived_type>().ctor<const base_type &, int, char>()));
+    ASSERT_TRUE((meta::resolve<derived_type>().ctor<>()));
+
+    ASSERT_TRUE(meta::resolve("your_type").data("a_data_member"));
+    ASSERT_FALSE(meta::resolve("your_type").data("another_data_member"));
+
+    ASSERT_TRUE(meta::resolve("your_type").func("a_member_function"));
+    ASSERT_FALSE(meta::resolve("your_type").func("another_member_function"));
 }
