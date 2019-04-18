@@ -1266,15 +1266,14 @@ public:
     template<typename Type>
     inline bool set(handle handle, std::size_t index, Type &&value) const {
         assert(index < node->ref()->extent);
-        return node->set(handle, any{index}, std::forward<Type>(value));
+        return node->set(handle, index, std::forward<Type>(value));
     }
 
     /**
      * @brief Gets the value of the variable enclosed by a given meta type.
      *
      * It must be possible to cast the instance to the parent type of the meta
-     * function. Otherwise, invoking the getter results in an undefined
-     * behavior.
+     * data. Otherwise, invoking the getter results in an undefined behavior.
      *
      * @param handle An opaque pointer to an instance of the underlying type.
      * @return A meta any containing the value of the underlying variable.
@@ -1287,8 +1286,7 @@ public:
      * @brief Gets the i-th element of an array enclosed by a given meta type.
      *
      * It must be possible to cast the instance to the parent type of the meta
-     * function. Otherwise, invoking the getter results in an undefined
-     * behavior.
+     * data. Otherwise, invoking the getter results in an undefined behavior.
      *
      * @param handle An opaque pointer to an instance of the underlying type.
      * @param index Position of the underlying element to get.
@@ -1296,7 +1294,7 @@ public:
      */
     inline any get(handle handle, std::size_t index) const noexcept {
         assert(index < node->ref()->extent);
-        return node->get(handle, any{index});
+        return node->get(handle, index);
     }
 
     /**
