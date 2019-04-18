@@ -100,8 +100,8 @@ struct data_node final {
     const bool is_const;
     const bool is_static;
     type_node *(* const ref)();
-    bool(* const set)(handle, any &);
-    any(* const get)(handle);
+    bool(* const set)(handle, any, any);
+    any(* const get)(handle, any);
     data(* const clazz)();
 };
 
@@ -125,6 +125,7 @@ struct func_node final {
 
 
 struct type_node final {
+    using size_type = std::size_t;
     const char *name;
     std::size_t id;
     type_node * next;
@@ -132,6 +133,7 @@ struct type_node final {
     const bool is_void;
     const bool is_integral;
     const bool is_floating_point;
+    const bool is_array;
     const bool is_enum;
     const bool is_union;
     const bool is_class;
@@ -139,6 +141,7 @@ struct type_node final {
     const bool is_function;
     const bool is_member_object_pointer;
     const bool is_member_function_pointer;
+    const size_type extent;
     type(* const remove_pointer)();
     bool(* const destroy)(handle);
     type(* const clazz)();
@@ -344,9 +347,9 @@ public:
      * @tparam Type Type of object to use to initialize the container.
      * @param type An instance of an object to use to initialize the container.
      */
-    template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::decay_t<Type>, any>>>
+    template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, any>>>
     any(Type &&type) {
-        using actual_type = std::decay_t<Type>;
+        using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
         node = internal::type_info<Type>::resolve();
 
         comparator = [](const void *lhs, const void *rhs) {
@@ -652,7 +655,7 @@ public:
      * @tparam Type Type of object to use to initialize the handle.
      * @param instance A reference to an object to use to initialize the handle.
      */
-    template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::decay_t<Type>, handle>>>
+    template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, handle>>>
     handle(Type &&instance) noexcept
         : handle{0, std::forward<Type>(instance)}
     {}
@@ -1242,8 +1245,28 @@ public:
      */
     template<typename Type>
     inline bool set(handle handle, Type &&value) const {
-        any any{std::forward<Type>(value)};
-        return node->set(handle, any);
+        return node->set(handle, any{}, std::forward<Type>(value));
+    }
+
+    /**
+     * @brief Sets the i-th element of an array enclosed by a given meta type.
+     *
+     * It must be possible to cast the instance to the parent type of the meta
+     * data. Otherwise, invoking the setter results in an undefined
+     * behavior.<br/>
+     * The type of the value must coincide exactly with that of the array type
+     * enclosed by the meta data. Otherwise, invoking the setter does nothing.
+     *
+     * @tparam Type Type of value to assign.
+     * @param handle An opaque pointer to an instance of the underlying type.
+     * @param index Position of the underlying element to set.
+     * @param value Parameter to use to set the underlying element.
+     * @return True in case of success, false otherwise.
+     */
+    template<typename Type>
+    inline bool set(handle handle, std::size_t index, Type &&value) const {
+        assert(index < node->ref()->extent);
+        return node->set(handle, any{index}, std::forward<Type>(value));
     }
 
     /**
@@ -1257,7 +1280,23 @@ public:
      * @return A meta any containing the value of the underlying variable.
      */
     inline any get(handle handle) const noexcept {
-        return node->get(handle);
+        return node->get(handle, any{});
+    }
+
+    /**
+     * @brief Gets the i-th element of an array enclosed by a given meta type.
+     *
+     * It must be possible to cast the instance to the parent type of the meta
+     * function. Otherwise, invoking the getter results in an undefined
+     * behavior.
+     *
+     * @param handle An opaque pointer to an instance of the underlying type.
+     * @param index Position of the underlying element to get.
+     * @return A meta any containing the value of the underlying element.
+     */
+    inline any get(handle handle, std::size_t index) const noexcept {
+        assert(index < node->ref()->extent);
+        return node->get(handle, any{index});
     }
 
     /**
@@ -1509,6 +1548,9 @@ class type final {
     {}
 
 public:
+    /*! @brief Unsigned integer type. */
+    using size_type = typename internal::type_node::size_type;
+
     /*! @brief Default constructor. */
     inline type() noexcept
         : node{nullptr}
@@ -1547,6 +1589,15 @@ public:
      */
     inline bool is_floating_point() const noexcept {
         return node->is_floating_point;
+    }
+
+    /**
+     * @brief Indicates whether a given meta type refers to an array type or
+     * not.
+     * @return True if the underlying type is an array type, false otherwise.
+     */
+    inline bool is_array() const noexcept {
+        return node->is_array;
     }
 
     /**
@@ -1608,6 +1659,16 @@ public:
      */
     inline bool is_member_function_pointer() const noexcept {
         return node->is_member_function_pointer;
+    }
+
+    /**
+     * @brief If a given meta type refers to an array type, provides the number
+     * of elements of the array.
+     * @return The number of elements of the array if the underlying type is an
+     * array type, 0 otherwise.
+     */
+    inline size_type extent() const noexcept {
+        return node->extent;
     }
 
     /**
@@ -2022,25 +2083,29 @@ struct function_helper<std::integral_constant<decltype(Func), Func>>: decltype(t
 
 template<typename Type>
 inline bool destroy([[maybe_unused]] handle handle) {
-    if constexpr(std::is_object_v<Type>) {
-        return handle.type() == type_info<Type>::resolve()->clazz()
-                ? (static_cast<Type *>(handle.data())->~Type(), true)
-                : false;
-    } else {
-        return false;
+    bool accepted = false;
+
+    if constexpr(std::is_object_v<Type> && !std::is_array_v<Type>) {
+        accepted = (handle.type() == type_info<Type>::resolve()->clazz());
+
+        if(accepted) {
+            static_cast<Type *>(handle.data())->~Type();
+        }
     }
+
+    return accepted;
 }
 
 
 template<typename Type, typename... Args, std::size_t... Indexes>
 inline any construct(any * const args, std::index_sequence<Indexes...>) {
-    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::decay_t<Args>>()...}};
-    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_convert{{(std::get<Indexes>(can_cast) ? false : (args+Indexes)->can_convert<std::decay_t<Args>>())...}};
+    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
+    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_convert{{(std::get<Indexes>(can_cast) ? false : (args+Indexes)->can_convert<std::remove_cv_t<std::remove_reference_t<Args>>>())...}};
     any any{};
 
     if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
-        ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::decay_t<Args>>()) : void()), ...);
-        any = Type{(args+Indexes)->cast<std::decay_t<Args>>()...};
+        ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
+        any = Type{(args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...};
     }
 
     return any;
@@ -2048,55 +2113,88 @@ inline any construct(any * const args, std::index_sequence<Indexes...>) {
 
 
 template<bool Const, typename Type, auto Data>
-bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any &any) {
+bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_unused]] any value) {
     bool accepted = false;
 
-    if constexpr(Const) {
-        return accepted;
-    } else {
+    if constexpr(!Const) {
         if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
             using helper_type = function_helper<std::integral_constant<decltype(Data), Data>>;
             using data_type = std::decay_t<std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>>;
             static_assert(std::is_invocable_v<decltype(Data), Type *, data_type>);
-            accepted = any.can_cast<data_type>() || any.convert<data_type>();
+            accepted = value.can_cast<data_type>() || value.convert<data_type>();
             auto *clazz = handle.try_cast<Type>();
 
             if(accepted && clazz) {
-                std::invoke(Data, clazz, any.cast<data_type>());
+                std::invoke(Data, clazz, value.cast<data_type>());
             }
         } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
-            using data_type = std::decay_t<decltype(std::declval<Type>().*Data)>;
+            using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
             static_assert(std::is_invocable_v<decltype(Data), Type>);
-            accepted = any.can_cast<data_type>() || any.convert<data_type>();
             auto *clazz = handle.try_cast<Type>();
 
-            if(accepted && clazz) {
-                std::invoke(Data, clazz) = any.cast<data_type>();
+            if constexpr(std::is_array_v<data_type>) {
+                using underlying_type = std::remove_extent_t<data_type>;
+                accepted = index.can_cast<std::size_t>() && (value.can_cast<underlying_type>() || value.convert<underlying_type>());
+
+                if(accepted && clazz) {
+                    std::invoke(Data, clazz)[index.cast<std::size_t>()] = value.cast<underlying_type>();
+                }
+            } else {
+                accepted = value.can_cast<data_type>() || value.convert<data_type>();
+
+                if(accepted && clazz) {
+                    std::invoke(Data, clazz) = value.cast<data_type>();
+                }
             }
         } else {
             static_assert(std::is_pointer_v<decltype(Data)>);
-            using data_type = std::decay_t<decltype(*Data)>;
-            accepted = any.can_cast<data_type>() || any.convert<data_type>();
+            using data_type = std::remove_cv_t<std::remove_reference_t<decltype(*Data)>>;
 
-            if(accepted) {
-                *Data = any.cast<data_type>();
+            if constexpr(std::is_array_v<data_type>) {
+                using underlying_type = std::remove_extent_t<data_type>;
+                accepted = index.can_cast<std::size_t>() && (value.can_cast<underlying_type>() || value.convert<underlying_type>());
+
+                if(accepted) {
+                    (*Data)[index.cast<std::size_t>()] = value.cast<underlying_type>();
+                }
+            } else {
+                accepted = value.can_cast<data_type>() || value.convert<data_type>();
+
+                if(accepted) {
+                    *Data = value.cast<data_type>();
+                }
             }
         }
-
-        return accepted;
     }
+
+    return accepted;
 }
 
 
 template<typename Type, auto Data>
-inline any getter([[maybe_unused]] handle handle) {
-    if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_pointer_v<decltype(Data)>) {
+inline any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
+    if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
         static_assert(std::is_invocable_v<decltype(Data), Type *>);
         auto *clazz = handle.try_cast<Type>();
         return clazz ? std::invoke(Data, clazz) : any{};
+    } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
+        using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
+        static_assert(std::is_invocable_v<decltype(Data), Type *>);
+        auto *clazz = handle.try_cast<Type>();
+
+        if constexpr(std::is_array_v<data_type>) {
+            return (clazz && index.can_cast<std::size_t>()) ? std::invoke(Data, clazz)[index.cast<std::size_t>()] : any{};
+        } else {
+            return clazz ? std::invoke(Data, clazz) : any{};
+        }
     } else {
         static_assert(std::is_pointer_v<decltype(Data)>);
-        return any{*Data};
+
+        if constexpr(std::is_array_v<std::remove_pointer_t<decltype(Data)>>) {
+            return index.can_cast<std::size_t>() ? (*Data)[index.cast<std::size_t>()] : any{};
+        } else {
+            return any{*Data};
+        }
     }
 }
 
@@ -2154,6 +2252,7 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_void_v<Type>,
             std::is_integral_v<Type>,
             std::is_floating_point_v<Type>,
+            std::is_array_v<Type>,
             std::is_enum_v<Type>,
             std::is_union_v<Type>,
             std::is_class_v<Type>,
@@ -2161,6 +2260,7 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
+            std::extent_v<Type>,
             []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &destroy<Type>,
             []() -> meta::type { return &node; }

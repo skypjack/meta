@@ -69,7 +69,7 @@ class factory {
 
     template<typename Owner, typename Property, typename... Other>
     internal::prop_node * properties(Property &&property, Other &&... other) {
-        static std::decay_t<Property> prop{};
+        static std::remove_cv_t<std::remove_reference_t<Property>> prop{};
 
         static internal::prop_node node{
             nullptr,
@@ -94,6 +94,7 @@ class factory {
             std::is_void_v<Type>,
             std::is_integral_v<Type>,
             std::is_floating_point_v<Type>,
+            std::is_array_v<Type>,
             std::is_enum_v<Type>,
             std::is_union_v<Type>,
             std::is_class_v<Type>,
@@ -101,6 +102,7 @@ class factory {
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
+            std::extent_v<Type>,
             []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &internal::destroy<Type>,
             []() -> meta::type { return &node; }
@@ -236,7 +238,7 @@ public:
      */
     template<typename To>
     factory conv() noexcept {
-        static_assert(std::is_convertible_v<Type, std::decay_t<To>>);
+        static_assert(std::is_convertible_v<Type, To>);
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::conv_node node{
@@ -244,7 +246,7 @@ public:
             type,
             nullptr,
             &internal::type_info<To>::resolve,
-            [](void *instance) -> any { return static_cast<std::decay_t<To>>(*static_cast<Type *>(instance)); },
+            [](void *instance) -> any { return static_cast<To>(*static_cast<Type *>(instance)); },
             []() -> meta::conv { return &node; }
         };
 
@@ -403,8 +405,8 @@ public:
                 true,
                 true,
                 &internal::type_info<Type>::resolve,
-                [](handle, any &) { return false; },
-                [](handle) -> any { return Data; },
+                [](handle, any, any) { return false; },
+                [](handle, any) -> any { return Data; },
                 []() -> meta::data { return &node; }
             };
 
