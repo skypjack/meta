@@ -1,5 +1,5 @@
-#ifndef factory_HPP
-#define factory_HPP
+#ifndef META_FACTORY_HPP
+#define META_FACTORY_HPP
 
 
 #include <cassert>
@@ -38,20 +38,6 @@ bool unregister() noexcept;
 template<typename Type>
 class factory {
     static_assert(std::is_object_v<Type> && !(std::is_const_v<Type> || std::is_volatile_v<Type>));
-
-    template<auto Data>
-    static std::enable_if_t<std::is_member_object_pointer_v<decltype(Data)>, decltype(std::declval<Type>().*Data)>
-    actual_type();
-
-    template<auto Data>
-    static std::enable_if_t<std::is_pointer_v<decltype(Data)>, decltype(*Data)>
-    actual_type();
-
-    template<auto Data>
-    using data_type = std::remove_reference_t<decltype(factory::actual_type<Data>())>;
-
-    template<auto Func>
-    using func_type = internal::function_helper<std::integral_constant<decltype(Func), Func>>;
 
     template<typename Node>
     inline bool duplicate(const std::size_t &id, const Node *node) noexcept {
@@ -412,7 +398,9 @@ public:
 
             node.prop = properties<std::integral_constant<Type, Data>>(std::forward<Property>(property)...);
             curr = &node;
-        } else {
+        } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
+            using data_type = std::remove_reference_t<decltype(std::declval<Type>().*Data)>;
+
             static internal::data_node node{
                 &internal::type_info<Type>::template data<Data>,
                 nullptr,
@@ -420,10 +408,31 @@ public:
                 type,
                 nullptr,
                 nullptr,
-                std::is_const_v<data_type<Data>>,
+                std::is_const_v<data_type>,
                 !std::is_member_object_pointer_v<decltype(Data)>,
-                &internal::type_info<data_type<Data>>::resolve,
-                &internal::setter<std::is_const_v<data_type<Data>>, Type, Data>,
+                &internal::type_info<data_type>::resolve,
+                &internal::setter<std::is_const_v<data_type>, Type, Data>,
+                &internal::getter<Type, Data>,
+                []() -> meta::data { return &node; }
+            };
+
+            node.prop = properties<std::integral_constant<decltype(Data), Data>>(std::forward<Property>(property)...);
+            curr = &node;
+        } else {
+            static_assert(std::is_pointer_v<decltype(Data)>);
+            using data_type = std::remove_pointer_t<decltype(Data)>;
+
+            static internal::data_node node{
+                &internal::type_info<Type>::template data<Data>,
+                nullptr,
+                {},
+                type,
+                nullptr,
+                nullptr,
+                std::is_const_v<data_type>,
+                !std::is_member_object_pointer_v<decltype(Data)>,
+                &internal::type_info<data_type>::resolve,
+                &internal::setter<std::is_const_v<data_type>, Type, Data>,
                 &internal::getter<Type, Data>,
                 []() -> meta::data { return &node; }
             };
@@ -516,6 +525,7 @@ public:
     template<auto Func, typename... Property>
     factory func(const char *str, Property &&... property) noexcept {
         using owner_type = std::integral_constant<decltype(Func), Func>;
+        using func_type = internal::function_helper<std::integral_constant<decltype(Func), Func>>;
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::func_node node{
@@ -525,12 +535,12 @@ public:
             type,
             nullptr,
             nullptr,
-            func_type<Func>::size,
-            func_type<Func>::is_const,
-            func_type<Func>::is_static,
-            &internal::type_info<typename func_type<Func>::return_type>::resolve,
-            &func_type<Func>::arg,
-            [](handle handle, any *any) { return internal::invoke<Type, Func>(handle, any, std::make_index_sequence<func_type<Func>::size>{}); },
+            func_type::size,
+            func_type::is_const,
+            func_type::is_static,
+            &internal::type_info<typename func_type::return_type>::resolve,
+            &func_type::arg,
+            [](handle handle, any *any) { return internal::invoke<Type, Func>(handle, any, std::make_index_sequence<func_type::size>{}); },
             []() -> meta::func { return &node; }
         };
 
@@ -644,4 +654,4 @@ void resolve(Op op) noexcept {
 }
 
 
-#endif // factory_HPP
+#endif // META_FACTORY_HPP
