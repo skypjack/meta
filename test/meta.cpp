@@ -480,6 +480,32 @@ TEST_F(Meta, MetaAnyCast) {
     ASSERT_EQ(&std::as_const(any).cast<derived_type>(), handle.try_cast<derived_type>());
 }
 
+TEST_F(Meta, MetaAnyRefCast) {
+    int n = 0;
+    meta::any any = meta::any::ref(n);
+
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int&>());
+    ASSERT_FALSE(any.can_cast<int>());
+    ASSERT_TRUE(any.can_cast<int&>());
+    ASSERT_TRUE(any.can_cast<const int&>());
+    ASSERT_FALSE(any.can_cast<int*>());
+    ASSERT_FALSE(any.can_cast<const int*>());
+}
+
+TEST_F(Meta, MetaAnyConstRefCast) {
+    int n = 0;
+    meta::any any = meta::any::cref(n);
+
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<const int&>());
+    ASSERT_FALSE(any.can_cast<int>());
+    ASSERT_TRUE(any.can_cast<const int&>());
+    ASSERT_FALSE(any.can_cast<int&>());
+    ASSERT_FALSE(any.can_cast<int*>());
+    ASSERT_FALSE(any.can_cast<const int*>());
+}
+
 TEST_F(Meta, MetaAnyConvert) {
     meta::any any{42.};
 
@@ -1277,9 +1303,13 @@ TEST_F(Meta, MetaTypeTraits) {
     ASSERT_TRUE(meta::resolve<union_type>().is_union());
     ASSERT_TRUE(meta::resolve<derived_type>().is_class());
     ASSERT_TRUE(meta::resolve<int *>().is_pointer());
+    ASSERT_TRUE(meta::resolve<int &>().is_reference());
     ASSERT_TRUE(meta::resolve<decltype(empty_type::destroy)>().is_function());
     ASSERT_TRUE(meta::resolve<decltype(&data_type::i)>().is_member_object_pointer());
     ASSERT_TRUE(meta::resolve<decltype(&func_type::g)>().is_member_function_pointer());
+    ASSERT_TRUE(meta::resolve<const int>().is_const());
+    ASSERT_TRUE(meta::resolve<const int*>().is_const());
+    ASSERT_TRUE(meta::resolve<const int&>().is_const());
 }
 
 TEST_F(Meta, MetaTypeRemovePointer) {

@@ -138,9 +138,11 @@ struct type_node final {
     const bool is_union;
     const bool is_class;
     const bool is_pointer;
+    const bool is_reference;
     const bool is_function;
     const bool is_member_object_pointer;
     const bool is_member_function_pointer;
+    const bool is_const;
     const size_type extent;
     type(* const remove_pointer)();
     bool(* const destroy)(handle);
@@ -187,7 +189,7 @@ struct info_node<Type> {
 
 
 template<typename... Type>
-struct type_info: info_node<std::remove_cv_t<std::remove_reference_t<Type>>...> {};
+struct type_info: info_node<std::remove_cv_t<Type>...> {};
 
 
 template<typename Op, typename Node>
@@ -243,7 +245,7 @@ auto find_if(Op op, const type_node *node) noexcept
 }
 
 
-template<typename Type>
+template<typename Type, typename = std::enable_if_t<!std::is_reference_v<Type>>>
 const Type * try_cast(const type_node *node, void *instance) noexcept {
     const auto *type = type_info<Type>::resolve();
     void *ret = nullptr;
@@ -261,6 +263,23 @@ const Type * try_cast(const type_node *node, void *instance) noexcept {
     return static_cast<const Type *>(ret);
 }
 
+template<typename Type, typename = std::enable_if_t<std::is_reference_v<Type>>>
+std::remove_reference_t<Type> * try_cast(const type_node *node, void *instance) noexcept {
+    const auto *type = type_info<Type>::resolve();
+    void *ret = nullptr;
+
+    if(node == type) {
+        ret = instance;
+    } else {
+        const auto *base = find_if<&type_node::base>([type](auto *node) {
+            return node->ref() == type;
+        }, node);
+
+        ret = base ? base->cast(instance) : nullptr;
+    }
+
+    return *static_cast<std::remove_reference_t<Type> **>(ret);
+}
 
 template<auto Member>
 inline bool can_cast_or_convert(const type_node *from, const type_node *to) noexcept {
@@ -391,6 +410,52 @@ public:
         }
     }
 
+    struct ref_tag {};
+
+    template<typename Type>
+    any(ref_tag, Type &type) noexcept {
+        // References get "upgraded" into a pointer, so that they can be reassigned
+        using stored_type = std::remove_cv_t<std::remove_reference_t<Type>>*;
+        node = internal::type_info<Type&>::resolve();
+
+        comparator = [](const void *lhs, const void *rhs) {
+            return compare(0, *static_cast<const stored_type *>(lhs), *static_cast<const stored_type *>(rhs));
+        };
+
+        new (&storage) stored_type{&type};
+        instance = &storage;
+
+        copy = [](storage_type &storage, const void *instance) -> void * {
+            return new (&storage) stored_type{*static_cast<const stored_type *>(instance)};
+        };
+
+        destroy = [](storage_type &storage) {
+            // No-op for references. The value is stored as a raw pointer.
+        };
+    }
+
+    template<typename Type>
+    any(ref_tag, const Type &type) noexcept {
+        // References get "upgraded" into a pointer, so that they can be reassigned
+        using stored_type = const std::remove_reference_t<Type>*;
+        node = internal::type_info<const Type&>::resolve();
+
+        comparator = [](const void *lhs, const void *rhs) {
+            return compare(0, *static_cast<const stored_type *>(lhs), *static_cast<const stored_type *>(rhs));
+        };
+
+        new (&storage) stored_type{&type};
+        instance = &storage;
+
+        copy = [](storage_type &storage, const void *instance) -> void * {
+            return new (&storage) stored_type{*static_cast<const stored_type *>(instance)};
+        };
+
+        destroy = [](storage_type &storage) {
+            // No-op for references. The value is stored as a raw pointer.
+        };
+    }
+
     /**
      * @brief Copy constructor.
      * @param other The instance to copy from.
@@ -486,7 +551,7 @@ public:
      * @tparam Type Type to which to cast the instance.
      * @return A reference to the contained instance.
      */
-    template<typename Type>
+    template<typename Type, typename = std::enable_if_t<!std::is_reference_v<Type>>>
     inline const Type & cast() const noexcept {
         assert(can_cast<Type>());
         return *internal::try_cast<Type>(node, instance);
@@ -506,9 +571,48 @@ public:
      * @tparam Type Type to which to cast the instance.
      * @return A reference to the contained instance.
      */
-    template<typename Type>
+    template<typename Type, typename = std::enable_if_t<!std::is_reference_v<Type>>>
     inline Type & cast() noexcept {
         return const_cast<Type &>(std::as_const(*this).cast<Type>());
+    }
+
+    /**
+     * @brief Tries to cast an instance to a given reference type.
+     *
+     * The type of the instance must be such that the cast is possible.
+     *
+     * @warning
+     * Attempting to perform a cast that isn't viable results in undefined
+     * behavior.<br/>
+     * An assertion will abort the execution at runtime in debug mode in case
+     * the cast is not feasible.
+     *
+     * @tparam Type Reference type to which to cast the instance.
+     * @return A reference to the contained instance.
+     */
+    template<typename Type, typename = std::enable_if_t<std::is_reference_v<Type>>>
+    inline const Type cast() const noexcept {
+        assert(can_cast<Type>());
+        return *internal::try_cast<Type>(node, instance);
+    }
+
+    /**
+     * @brief Tries to cast an instance to a given reference type.
+     *
+     * The type of the instance must be such that the cast is possible.
+     *
+     * @warning
+     * Attempting to perform a cast that isn't viable results in undefined
+     * behavior.<br/>
+     * An assertion will abort the execution at runtime in debug mode in case
+     * the cast is not feasible.
+     *
+     * @tparam Type Reference type to which to cast the instance.
+     * @return A reference to the contained instance.
+     */
+    template<typename Type, typename = std::enable_if_t<std::is_reference_v<Type>>>
+    inline Type cast() noexcept {
+        return const_cast<Type>(std::as_const(*this).cast<Type>());
     }
 
     /**
@@ -585,6 +689,43 @@ public:
      */
     inline bool operator==(const any &other) const noexcept {
         return (!instance && !other.instance) || (instance && other.instance && node == other.node && comparator(instance, other.instance));
+    }
+
+    /**
+     * @brief Creates a new any container holding a reference to type. The value
+     * of type will not be copied.
+     * @tparam Type The reference type
+     * @param type The reference to be wrapped into a any object
+     * @return An any object holding the given reference.
+     */
+    template<typename Type>
+    static any ref(Type &type) noexcept {
+        return any(ref_tag{}, type);
+    }
+
+    /**
+     * @brief Creates a new any container holding a reference to type. The value
+     * of type will not be copied.
+     * @tparam Type The reference type
+     * @param type The reference to be wrapped into a any object
+     * @return An any object holding the given reference.
+     */
+    template<typename Type>
+    static any ref(const Type &type) noexcept {
+        return any(ref_tag{}, type);
+    }
+
+    /**
+     * @brief Creates a new any container holding a reference to type. The value
+     * of type will not be copied. This variant explicitly wraps as a "const"
+     * reference.
+     * @tparam Type The reference type
+     * @param type The reference to be wrapped into a any object
+     * @return An any object holding the given reference.
+     */
+    template<typename Type>
+    static any cref(const Type &type) noexcept {
+        return any(ref_tag{}, type);
     }
 
     /**
@@ -1631,6 +1772,14 @@ public:
     }
 
     /**
+     * @brief Indicates whether a given meta type refers to a reference or not.
+     * @return True if the underlying type is a reference, false otherwise.
+     */
+    inline bool is_reference() const noexcept {
+        return node->is_reference;
+    }
+
+    /**
      * @brief Indicates whether a given meta type refers to a function type or
      * not.
      * @return True if the underlying type is a function, false otherwise.
@@ -1657,6 +1806,16 @@ public:
      */
     inline bool is_member_function_pointer() const noexcept {
         return node->is_member_function_pointer;
+    }
+
+    /**
+     * @brief Indicates whether a given meta type refers to a const object,
+     * pointer or reference.
+     * @return True if the underlying type is a const object, pointer or
+     * reference.
+     */
+    inline bool is_const() const noexcept {
+        return node->is_const;
     }
 
     /**
@@ -2255,11 +2414,15 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_union_v<Type>,
             std::is_class_v<Type>,
             std::is_pointer_v<Type>,
+            std::is_reference_v<Type>,
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
+            std::is_const_v<std::remove_reference_t<Type>>,
             std::extent_v<Type>,
-            []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
+            []() -> meta::type { return internal::type_info<
+                    std::remove_reference_t<
+                            std::remove_pointer_t<Type>>>::resolve(); },
             &destroy<Type>,
             []() -> meta::type { return &node; }
         };

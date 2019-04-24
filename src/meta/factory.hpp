@@ -85,11 +85,15 @@ class factory {
             std::is_union_v<Type>,
             std::is_class_v<Type>,
             std::is_pointer_v<Type>,
+            std::is_reference_v<Type>,
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
+            std::is_const_v<std::remove_reference_t<Type>>,
             std::extent_v<Type>,
-            []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
+            []() -> meta::type { return internal::type_info<
+                    std::remove_reference_t<
+                            std::remove_pointer_t<Type>>>::resolve(); },
             &internal::destroy<Type>,
             []() -> meta::type { return &node; }
         };
