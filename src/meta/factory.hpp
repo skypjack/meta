@@ -89,7 +89,7 @@ class factory {
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
-            std::is_const_v<std::remove_reference_t<Type>>,
+            std::is_const_v<std::remove_pointer_t<std::remove_reference_t<Type>>>,
             std::extent_v<Type>,
             []() -> meta::type { return internal::type_info<
                     std::remove_reference_t<
@@ -213,6 +213,36 @@ public:
         assert((!internal::type_info<Type>::template base<Base>));
         internal::type_info<Type>::template base<Base> = &node;
         type->base = &node;
+
+        auto * const type_ref = internal::type_info<Type&>::resolve();
+        static internal::base_node node_ref{
+                &internal::type_info<Type&>::template base<Base&>,
+                type_ref,
+                nullptr,
+                &internal::type_info<Base&>::resolve,
+                [](void *instance) -> void * { return static_cast<Base *>(static_cast<Type *>(instance)); },
+                []() -> meta::base { return &node_ref; }
+        };
+
+        node_ref.next = type_ref->base;
+        assert((!internal::type_info<Type&>::template base<Base&>));
+        internal::type_info<Type&>::template base<Base&> = &node_ref;
+        type_ref->base = &node_ref;
+
+        auto * const type_cref = internal::type_info<const Type&>::resolve();
+        static internal::base_node node_cref{
+                &internal::type_info<const Type&>::template base<const Base&>,
+                type_cref,
+                nullptr,
+                &internal::type_info<const Base&>::resolve,
+                [](void *instance) -> void * { return static_cast<Base *>(static_cast<Type *>(instance)); },
+                []() -> meta::base { return &node_cref; }
+        };
+
+        node_cref.next = type_cref->base;
+        assert((!internal::type_info<const Type&>::template base<const Base&>));
+        internal::type_info<const Type&>::template base<const Base&> = &node_cref;
+        type_cref->base = &node_cref;
 
         return *this;
     }

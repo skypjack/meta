@@ -189,7 +189,7 @@ struct info_node<Type> {
 
 
 template<typename... Type>
-struct type_info: info_node<std::remove_cv_t<Type>...> {};
+struct type_info: info_node<Type...> {};
 
 
 template<typename Op, typename Node>
@@ -369,7 +369,7 @@ public:
     template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, any>>>
     any(Type &&type) {
         using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
-        node = internal::type_info<Type>::resolve();
+        node = internal::type_info<actual_type>::resolve();
 
         comparator = [](const void *lhs, const void *rhs) {
             return compare(0, *static_cast<const actual_type *>(lhs), *static_cast<const actual_type *>(rhs));
@@ -384,7 +384,7 @@ public:
             };
 
             destroy = [](storage_type &storage) {
-                auto *node = internal::type_info<Type>::resolve();
+                auto *node = internal::type_info<actual_type>::resolve();
                 auto *instance = reinterpret_cast<actual_type *>(&storage);
                 node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
             };
@@ -401,7 +401,7 @@ public:
             };
 
             destroy = [](storage_type &storage) {
-                auto *node = internal::type_info<Type>::resolve();
+                auto *node = internal::type_info<actual_type>::resolve();
                 auto *chunk = *reinterpret_cast<chunk_type **>(&storage);
                 auto *instance = reinterpret_cast<actual_type *>(chunk);
                 node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
@@ -633,12 +633,39 @@ public:
      * one otherwise.
      */
     template<typename Type>
-    inline any convert() const noexcept {
+    inline std::enable_if_t<!std::is_reference_v<Type>, any> convert() const noexcept {
         const auto *type = internal::type_info<Type>::resolve();
         any any{};
 
         if(node == type) {
             any = *static_cast<const Type *>(instance);
+        } else {
+            const auto *conv = internal::find_if<&internal::type_node::conv>([type](auto *node) {
+                return node->ref() == type;
+            }, node);
+
+            if(conv) {
+                any = conv->convert(instance);
+            }
+        }
+
+        return any;
+    }
+
+    /**
+     * @brief Tries to convert an instance to a given reference type and returns
+     * it.
+     * @tparam Type Reference type to which to convert the instance.
+     * @return A valid meta any object if the conversion is possible, an invalid
+     * one otherwise.
+     */
+    template<typename Type>
+    inline std::enable_if_t<std::is_reference_v<Type>, any> convert() const noexcept {
+        const auto *type = internal::type_info<Type>::resolve();
+        any any{};
+
+        if(node == type) {
+            any = *static_cast<const std::remove_reference_t<Type> *>(instance);
         } else {
             const auto *conv = internal::find_if<&internal::type_node::conv>([type](auto *node) {
                 return node->ref() == type;
@@ -780,7 +807,7 @@ class handle final {
 
     template<typename Type>
     handle(char, Type &&instance) noexcept
-        : node{internal::type_info<Type>::resolve()},
+        : node{internal::type_info<std::remove_cv_t<std::remove_reference_t<Type>>>::resolve()},
           instance{&instance}
     {}
 
@@ -1040,6 +1067,8 @@ inline bool operator!=(const base &lhs, const base &rhs) noexcept {
 class conv final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
+
+    template<typename... Type> friend struct internal::info_node;
 
     inline conv(const internal::conv_node *node) noexcept
         : node{node}
@@ -2418,7 +2447,7 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_function_v<Type>,
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
-            std::is_const_v<std::remove_reference_t<Type>>,
+            std::is_const_v<std::remove_pointer_t<std::remove_reference_t<Type>>>,
             std::extent_v<Type>,
             []() -> meta::type { return internal::type_info<
                     std::remove_reference_t<
@@ -2426,8 +2455,60 @@ type_node * info_node<Type>::resolve() noexcept {
             &destroy<Type>,
             []() -> meta::type { return &node; }
         };
-
         type = &node;
+
+        using copied_type = std::remove_cv_t<std::remove_reference_t<Type>>;
+        if constexpr(std::is_reference_v<Type>) {
+            if constexpr(std::is_copy_constructible_v<copied_type>) {
+                static internal::conv_node node{
+                        &internal::type_info<Type>::template conv<copied_type>,
+                        type,
+                        nullptr,
+                        &internal::type_info<copied_type>::resolve,
+                        [](void *instance) -> any { return **static_cast<copied_type **>(instance); },
+                        []() -> meta::conv { return &node; }
+                };
+
+                node.next = type->conv;
+                assert((!internal::type_info<Type>::template conv<copied_type>));
+                internal::type_info<Type>::template conv<copied_type> = &node;
+                type->conv = &node;
+            }
+
+            if constexpr(!std::is_const_v<Type> && !std::is_same_v<Type, void> && !std::is_function_v<Type>) {
+                using const_ref_type = const std::remove_reference_t<Type>&;
+                static internal::conv_node node{
+                        &internal::type_info<Type>::template conv<const_ref_type>,
+                        type,
+                        nullptr,
+                        &internal::type_info<const_ref_type>::resolve,
+                        [](void *instance) -> any { return any::cref(**static_cast<std::remove_reference_t<Type> **>(instance)); },
+                        []() -> meta::conv { return &node; }
+                };
+
+                node.next = type->conv;
+                assert((!internal::type_info<Type>::template conv<const_ref_type>));
+                internal::type_info<Type>::template conv<const_ref_type> = &node;
+                type->conv = &node;
+            }
+        } else {
+            if constexpr(!std::is_const_v<Type> && !std::is_same_v<Type, void> && !std::is_function_v<Type>) {
+                using const_ref_type = const Type;
+                static internal::conv_node node{
+                        &internal::type_info<Type>::template conv<const_ref_type>,
+                        type,
+                        nullptr,
+                        &internal::type_info<const_ref_type>::resolve,
+                        [](void *instance) -> any { return any::cref(*static_cast<std::remove_reference_t<Type> *>(instance)); },
+                        []() -> meta::conv { return &node; }
+                };
+
+                node.next = type->conv;
+                assert((!internal::type_info<Type>::template conv<const_ref_type>));
+                internal::type_info<Type>::template conv<const_ref_type> = &node;
+                type->conv = &node;
+            }
+        }
     }
 
     return type;
