@@ -2274,9 +2274,9 @@ type_node * info_node<Type>::resolve() noexcept {
             std::extent_v<Type>,
             [](void* ptr) -> void* {
                 if constexpr(std::is_pointer_v<Type>) {
-                    return *static_cast<Type*>(ptr);
+                    return reinterpret_cast<void*>(*reinterpret_cast<Type*>(ptr));
                 } else {
-                    return static_cast<Type*>(ptr);
+                    return reinterpret_cast<void*>(reinterpret_cast<Type*>(ptr));
                 }
             },
             []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
