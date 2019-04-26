@@ -584,6 +584,7 @@ TEST_F(Meta, MetaProp) {
     ASSERT_NE(prop, meta::prop{});
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 42);
+    ASSERT_EQ(prop, meta::resolve<char*>().prop(properties::prop_int));
 }
 
 TEST_F(Meta, MetaBase) {
@@ -595,6 +596,7 @@ TEST_F(Meta, MetaBase) {
     ASSERT_EQ(base.parent(), meta::resolve("derived"));
     ASSERT_EQ(base.type(), meta::resolve<base_type>());
     ASSERT_EQ(base.cast(&derived), static_cast<base_type *>(&derived));
+    ASSERT_EQ(base, meta::resolve<derived_type*>().base("base"));
 }
 
 TEST_F(Meta, MetaConv) {
@@ -605,6 +607,7 @@ TEST_F(Meta, MetaConv) {
     ASSERT_NE(conv, meta::conv{});
     ASSERT_EQ(conv.parent(), meta::resolve<double>());
     ASSERT_EQ(conv.type(), meta::resolve<int>());
+    ASSERT_NE(conv, meta::resolve<double*>().conv<int>());
 
     auto any = conv.convert(&value);
 
@@ -624,6 +627,7 @@ TEST_F(Meta, MetaCtor) {
     ASSERT_EQ(ctor.arg(meta::ctor::size_type{1}), meta::resolve<int>());
     ASSERT_EQ(ctor.arg(meta::ctor::size_type{2}), meta::resolve<char>());
     ASSERT_FALSE(ctor.arg(meta::ctor::size_type{3}));
+    ASSERT_EQ(ctor, (meta::resolve<derived_type*>().ctor<const base_type &, int, char>()));
 
     auto any = ctor.invoke(base_type{}, 42, 'c');
     auto empty = ctor.invoke();
@@ -647,6 +651,13 @@ TEST_F(Meta, MetaCtor) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_bool);
     ASSERT_FALSE(prop.value().template cast<bool>());
+
+    ctor = meta::resolve<derived_type*>().ctor<const base_type &, int, char>();
+    any = ctor.invoke(base_type{}, 42, 'c');
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<derived_type>());
+    ASSERT_EQ(any.cast<derived_type>().i, 42);
+    ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
 TEST_F(Meta, MetaCtorFunc) {
@@ -681,6 +692,13 @@ TEST_F(Meta, MetaCtorFunc) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 42);
+
+    ctor = meta::resolve<derived_type*>().ctor<const base_type &, int>();
+    any = ctor.invoke(base_type{}, 42);
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<derived_type>());
+    ASSERT_EQ(any.cast<derived_type>().i, 42);
+    ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
 TEST_F(Meta, MetaCtorMetaAnyArgs) {
@@ -743,6 +761,15 @@ TEST_F(Meta, MetaDtor) {
     ASSERT_EQ(empty_type::counter, 0);
     ASSERT_TRUE(dtor.invoke(empty));
     ASSERT_EQ(empty_type::counter, 1);
+
+    dtor = meta::resolve<empty_type*>().dtor();
+
+    ASSERT_TRUE(dtor);
+    ASSERT_NE(dtor, meta::dtor{});
+    ASSERT_EQ(dtor.parent(), meta::resolve("empty"));
+    ASSERT_EQ(empty_type::counter, 1);
+    ASSERT_TRUE(dtor.invoke(&empty));
+    ASSERT_EQ(empty_type::counter, 2);
 }
 
 TEST_F(Meta, MetaDtorMetaAnyArg) {
@@ -752,10 +779,19 @@ TEST_F(Meta, MetaDtorMetaAnyArg) {
     ASSERT_EQ(empty_type::counter, 0);
     ASSERT_TRUE(dtor.invoke(any));
     ASSERT_EQ(empty_type::counter, 1);
+
+    dtor = meta::resolve<empty_type*>().dtor();
+    empty_type empty{};
+    meta::any ptr = &empty;
+
+    ASSERT_EQ(empty_type::counter, 1);
+    ASSERT_TRUE(dtor.invoke(any));
+    ASSERT_EQ(empty_type::counter, 2);
 }
 
 TEST_F(Meta, MetaDtorMetaAnyInvalidArg) {
     ASSERT_FALSE(meta::resolve<empty_type>().dtor().invoke(int{}));
+    ASSERT_FALSE(meta::resolve<empty_type*>().dtor().invoke(int{}));
 }
 
 
@@ -773,6 +809,7 @@ TEST_F(Meta, MetaData) {
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
     ASSERT_TRUE(data.set(instance, 42));
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
+    ASSERT_EQ(data, meta::resolve<data_type*>().data("i"));
 
     data.prop([](auto prop) {
         ASSERT_TRUE(prop);
@@ -787,6 +824,20 @@ TEST_F(Meta, MetaData) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 0);
+
+    data = meta::resolve<data_type*>().data("i");
+    meta::any ptr = &instance;
+    instance.i = 0;
+
+    ASSERT_EQ(data.get(ptr).cast<int>(), 0);
+    ASSERT_TRUE(data.set(ptr, 42));
+    ASSERT_EQ(data.get(ptr).cast<int>(), 42);
+
+    instance.i = 0;
+
+    ASSERT_EQ(data.get(&instance).cast<int>(), 0);
+    ASSERT_TRUE(data.set(&instance, 42));
+    ASSERT_EQ(data.get(&instance).cast<int>(), 42);
 }
 
 TEST_F(Meta, MetaDataConst) {
@@ -816,6 +867,17 @@ TEST_F(Meta, MetaDataConst) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 1);
+
+    data = meta::resolve<data_type*>().data("j");
+    meta::any ptr = &instance;
+
+    ASSERT_EQ(data.get(ptr).cast<int>(), 1);
+    ASSERT_FALSE(data.set(ptr, 42));
+    ASSERT_EQ(data.get(ptr).cast<int>(), 1);
+
+    ASSERT_EQ(data.get(&instance).cast<int>(), 1);
+    ASSERT_FALSE(data.set(&instance, 42));
+    ASSERT_EQ(data.get(&instance).cast<int>(), 1);
 }
 
 TEST_F(Meta, MetaDataStatic) {
@@ -844,6 +906,13 @@ TEST_F(Meta, MetaDataStatic) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 2);
+
+    data = meta::resolve<data_type*>().data("h");
+    data_type::h = 2;
+
+    ASSERT_EQ(data.get({}).cast<int>(), 2);
+    ASSERT_TRUE(data.set({}, 42));
+    ASSERT_EQ(data.get({}).cast<int>(), 42);
 }
 
 TEST_F(Meta, MetaDataConstStatic) {
@@ -872,6 +941,12 @@ TEST_F(Meta, MetaDataConstStatic) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_int);
     ASSERT_EQ(prop.value(), 3);
+
+    data = meta::resolve<data_type*>().data("k");
+
+    ASSERT_EQ(data.get({}).cast<int>(), 3);
+    ASSERT_FALSE(data.set({}, 42));
+    ASSERT_EQ(data.get({}).cast<int>(), 3);
 }
 
 TEST_F(Meta, MetaDataGetMetaAnyArg) {
@@ -1059,6 +1134,7 @@ TEST_F(Meta, MetaFunc) {
     ASSERT_EQ(func.arg(meta::func::size_type{0}), meta::resolve<int>());
     ASSERT_EQ(func.arg(meta::func::size_type{1}), meta::resolve<int>());
     ASSERT_FALSE(func.arg(meta::func::size_type{2}));
+    ASSERT_EQ(func, meta::resolve<func_type*>().func("f2"));
 
     auto any = func.invoke(instance, 3, 2);
     auto empty = func.invoke(instance);
@@ -1082,6 +1158,20 @@ TEST_F(Meta, MetaFunc) {
     ASSERT_TRUE(prop);
     ASSERT_EQ(prop.key(), properties::prop_bool);
     ASSERT_FALSE(prop.value().cast<bool>());
+
+    meta::any ptr = &instance;
+    any = meta::resolve<func_type*>().func("f2").invoke(ptr, 2, 3);
+
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 9);
+    ASSERT_EQ(func_type::value, 2);
+
+    any = meta::resolve<func_type*>().func("f2").invoke(&instance, 2, 3);
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 9);
+    ASSERT_EQ(func_type::value, 2);
 }
 
 TEST_F(Meta, MetaFuncConst) {
@@ -1105,6 +1195,17 @@ TEST_F(Meta, MetaFuncConst) {
     ASSERT_TRUE(any);
     ASSERT_EQ(any.type(), meta::resolve<int>());
     ASSERT_EQ(any.cast<int>(), 16);
+
+    meta::any ptr = &instance;
+    any = meta::resolve<func_type*>().func("f1").invoke(ptr, 3);
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 9);
+
+    any = meta::resolve<func_type*>().func("f1").invoke(&instance, 3);
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 9);
 
     func.prop([](auto prop) {
         ASSERT_TRUE(prop);
@@ -1139,6 +1240,10 @@ TEST_F(Meta, MetaFuncRetVoid) {
 
     ASSERT_FALSE(any);
     ASSERT_EQ(func_type::value, 25);
+
+    any = meta::resolve<func_type*>().func("g").invoke(instance, 4);
+    ASSERT_FALSE(any);
+    ASSERT_EQ(func_type::value, 16);
 
     func.prop([](auto prop) {
         ASSERT_TRUE(prop);
@@ -1176,6 +1281,11 @@ TEST_F(Meta, MetaFuncStatic) {
     ASSERT_EQ(any.type(), meta::resolve<int>());
     ASSERT_EQ(any.cast<int>(), 42);
 
+    any = meta::resolve<func_type*>().func("h").invoke({}, 34);
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 34);
+
     func.prop([](auto prop) {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
@@ -1209,6 +1319,10 @@ TEST_F(Meta, MetaFuncStaticRetVoid) {
     ASSERT_FALSE(any);
     ASSERT_EQ(func_type::value, 42);
 
+    any = meta::resolve<func_type*>().func("k").invoke({}, 42);
+    ASSERT_FALSE(any);
+    ASSERT_EQ(func_type::value, 42);
+
     func.prop([](auto *prop) {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop->key(), properties::prop_bool);
@@ -1231,10 +1345,18 @@ TEST_F(Meta, MetaFuncMetaAnyArgs) {
     ASSERT_TRUE(any);
     ASSERT_EQ(any.type(), meta::resolve<int>());
     ASSERT_EQ(any.cast<int>(), 9);
+
+    any = meta::resolve<func_type*>().func("f1").invoke(func_type{}, meta::any{2});
+    ASSERT_TRUE(any);
+    ASSERT_EQ(any.type(), meta::resolve<int>());
+    ASSERT_EQ(any.cast<int>(), 4);
 }
 
 TEST_F(Meta, MetaFuncInvalidArgs) {
     auto func = meta::resolve<func_type>().func("f1");
+    ASSERT_FALSE(func.invoke(empty_type{}, meta::any{'c'}));
+
+    func = meta::resolve<func_type*>().func("f1");
     ASSERT_FALSE(func.invoke(empty_type{}, meta::any{'c'}));
 }
 
@@ -1288,9 +1410,27 @@ TEST_F(Meta, MetaTypeRemovePointer) {
     ASSERT_EQ(meta::resolve<derived_type>().remove_pointer(), meta::resolve<derived_type>());
 }
 
+TEST_F(Meta, MetaTypeClazz) {
+    ASSERT_EQ(meta::resolve<void>().clazz(), meta::resolve<void>());
+    ASSERT_EQ(meta::resolve<void *>().clazz(), meta::resolve<void>());
+    ASSERT_EQ(meta::resolve<derived_type>().clazz(), meta::resolve<derived_type>());
+    ASSERT_EQ(meta::resolve<derived_type*>().clazz(), meta::resolve<derived_type>());
+}
+
 TEST_F(Meta, MetaTypeBase) {
     auto type = meta::resolve<derived_type>();
     bool iterate = false;
+
+    type.base([&iterate](auto base) {
+        ASSERT_EQ(base.type(), meta::resolve<base_type>());
+        iterate = true;
+    });
+
+    ASSERT_TRUE(iterate);
+    ASSERT_EQ(type.base("base").type(), meta::resolve<base_type>());
+
+    type = meta::resolve<derived_type*>();
+    iterate = false;
 
     type.base([&iterate](auto base) {
         ASSERT_EQ(base.type(), meta::resolve<base_type>());
@@ -1316,6 +1456,17 @@ TEST_F(Meta, MetaTypeConv) {
 
     ASSERT_EQ(conv.type(), meta::resolve<int>());
     ASSERT_FALSE(type.conv<char>());
+
+    type = meta::resolve<double*>();
+    iterate = false;
+
+    type.conv([&iterate](auto conv) {
+        iterate = true;
+    });
+    ASSERT_FALSE(iterate);
+
+    conv = type.conv<int>();
+    ASSERT_FALSE(conv);
 }
 
 TEST_F(Meta, MetaTypeCtor) {
@@ -1329,16 +1480,40 @@ TEST_F(Meta, MetaTypeCtor) {
     ASSERT_EQ(counter, 2);
     ASSERT_TRUE((type.ctor<const base_type &, int>()));
     ASSERT_TRUE((type.ctor<const derived_type &, double>()));
+
+    type = meta::resolve<derived_type*>();
+    counter = 0;
+
+    type.ctor([&counter](auto) {
+        ++counter;
+    });
+
+    ASSERT_EQ(counter, 2);
+    ASSERT_TRUE((type.ctor<const base_type &, int>()));
+    ASSERT_TRUE((type.ctor<const derived_type &, double>()));
 }
 
 TEST_F(Meta, MetaTypeDtor) {
     ASSERT_TRUE(meta::resolve<fat_type>().dtor());
     ASSERT_FALSE(meta::resolve<int>().dtor());
+
+    ASSERT_TRUE(meta::resolve<fat_type*>().dtor());
+    ASSERT_FALSE(meta::resolve<int*>().dtor());
 }
 
 TEST_F(Meta, MetaTypeData) {
     auto type = meta::resolve<data_type>();
     int counter{};
+
+    type.data([&counter](auto) {
+        ++counter;
+    });
+
+    ASSERT_EQ(counter, 5);
+    ASSERT_TRUE(type.data("i"));
+
+    type = meta::resolve<data_type*>();
+    counter = 0;
 
     type.data([&counter](auto) {
         ++counter;
@@ -1358,6 +1533,16 @@ TEST_F(Meta, MetaTypeFunc) {
 
     ASSERT_EQ(counter, 6);
     ASSERT_TRUE(type.func("f1"));
+
+    type = meta::resolve<func_type*>();
+    counter = 0;
+
+    type.func([&counter](auto) {
+        ++counter;
+    });
+
+    ASSERT_EQ(counter, 6);
+    ASSERT_TRUE(type.func("f1"));
 }
 
 TEST_F(Meta, MetaTypeConstruct) {
@@ -1368,6 +1553,11 @@ TEST_F(Meta, MetaTypeConstruct) {
     ASSERT_TRUE(any.can_cast<derived_type>());
     ASSERT_EQ(any.cast<derived_type>().i, 42);
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
+
+    // pointers are not constructible for now
+    type = meta::resolve<derived_type*>();
+    any = type.construct(base_type{}, 42, 'c');
+    ASSERT_FALSE(any);
 }
 
 TEST_F(Meta, MetaTypeConstructMetaAnyArgs) {

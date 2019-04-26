@@ -89,9 +89,11 @@ class factory {
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
             std::extent_v<Type>,
+            [](void* ptr) -> void* { return ptr; },
             []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &internal::destroy<Type>,
-            []() -> meta::type { return &node; }
+            []() -> meta::type { return &node; },
+            []() -> internal::type_node* { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); }
         };
 
         node.name = name;
@@ -620,7 +622,7 @@ inline bool unregister() noexcept {
  */
 template<typename Type>
 inline type resolve() noexcept {
-    return internal::type_info<Type>::resolve()->clazz();
+    return internal::type_info<Type>::resolve()->self();
 }
 
 
@@ -634,7 +636,7 @@ inline type resolve(const char *str) noexcept {
         return node->id == id;
     }, internal::type_info<>::type);
 
-    return curr ? curr->clazz() : type{};
+    return curr ? curr->self() : type{};
 }
 
 
@@ -646,7 +648,7 @@ inline type resolve(const char *str) noexcept {
 template<typename Op>
 void resolve(Op op) noexcept {
     internal::iterate([op = std::move(op)](auto *node) {
-        op(node->clazz());
+        op(node->self());
     }, internal::type_info<>::type);
 }
 

@@ -45,7 +45,7 @@ struct prop_node final {
     prop_node * next;
     any(* const key)();
     any(* const value)();
-    prop(* const clazz)();
+    prop(* const self)();
 };
 
 
@@ -55,7 +55,7 @@ struct base_node final {
     base_node * next;
     type_node *(* const ref)();
     void *(* const cast)(void *);
-    base(* const clazz)();
+    base(* const self)();
 };
 
 
@@ -65,7 +65,7 @@ struct conv_node final {
     conv_node * next;
     type_node *(* const ref)();
     any(* const convert)(void *);
-    conv(* const clazz)();
+    conv(* const self)();
 };
 
 
@@ -78,7 +78,7 @@ struct ctor_node final {
     const size_type size;
     type_node *(* const arg)(size_type);
     any(* const invoke)(any * const);
-    ctor(* const clazz)();
+    ctor(* const self)();
 };
 
 
@@ -86,7 +86,7 @@ struct dtor_node final {
     dtor_node ** const underlying;
     type_node * const parent;
     bool(* const invoke)(handle);
-    dtor(* const clazz)();
+    dtor(* const self)();
 };
 
 
@@ -102,7 +102,7 @@ struct data_node final {
     type_node *(* const ref)();
     bool(* const set)(handle, any, any);
     any(* const get)(handle, any);
-    data(* const clazz)();
+    data(* const self)();
 };
 
 
@@ -120,7 +120,7 @@ struct func_node final {
     type_node *(* const ret)();
     type_node *(* const arg)(size_type);
     any(* const invoke)(handle, any *);
-    func(* const clazz)();
+    func(* const self)();
 };
 
 
@@ -142,9 +142,11 @@ struct type_node final {
     const bool is_member_object_pointer;
     const bool is_member_function_pointer;
     const size_type extent;
+    void*(* const ptr)(void*);
     type(* const remove_pointer)();
     bool(* const destroy)(handle);
-    type(* const clazz)();
+    type(* const self)();
+    type_node*(* const clazz)();
     base_node *base;
     conv_node *conv;
     ctor_node *ctor;
@@ -633,14 +635,14 @@ private:
  */
 class handle final {
     handle(int, any &any) noexcept
-        : node{any.node},
-          instance{any.instance}
+        : node{any.node->clazz()},
+          instance{any.node->ptr(any.instance)}
     {}
 
     template<typename Type>
     handle(char, Type &&instance) noexcept
-        : node{internal::type_info<Type>::resolve()},
-          instance{&instance}
+        : node{internal::type_info<Type>::resolve()->clazz()},
+          instance{internal::type_info<Type>::resolve()->ptr(&instance)}
     {}
 
 public:
@@ -1041,7 +1043,7 @@ public:
     inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+            op(node->self());
         }, node->prop);
     }
 
@@ -1058,7 +1060,7 @@ public:
             return curr->key() == key;
         }, node->prop);
 
-        return curr ? curr->clazz() : meta::prop{};
+        return curr ? curr->self() : meta::prop{};
     }
 
     /**
@@ -1306,7 +1308,7 @@ public:
     inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+            op(node->self());
         }, node->prop);
     }
 
@@ -1323,7 +1325,7 @@ public:
             return curr->key() == key;
         }, node->prop);
 
-        return curr ? curr->clazz() : meta::prop{};
+        return curr ? curr->self() : meta::prop{};
     }
 
     /**
@@ -1474,7 +1476,7 @@ public:
     inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+            op(node->self());
         }, node->prop);
     }
 
@@ -1491,7 +1493,7 @@ public:
             return curr->key() == key;
         }, node->prop);
 
-        return curr ? curr->clazz() : meta::prop{};
+        return curr ? curr->self() : meta::prop{};
     }
 
     /**
@@ -1679,6 +1681,15 @@ public:
     }
 
     /**
+     * @brief Provides the meta type for the class type (i.e. without pointers,
+     * references or const)
+     * @return The meta type for the class type of the type
+     */
+    inline meta::type clazz() const noexcept {
+        return node->clazz();
+    }
+    
+    /**
      * @brief Iterates all the meta base of a meta type.
      *
      * Iteratively returns **all** the base classes of the given type.
@@ -1689,8 +1700,8 @@ public:
     template<typename Op>
     inline void base(Op op) const noexcept {
         internal::iterate<&internal::type_node::base>([op = std::move(op)](auto *node) {
-            op(node->clazz());
-        }, node);
+            op(node->self());
+        }, node->clazz());
     }
 
     /**
@@ -1704,9 +1715,9 @@ public:
     inline meta::base base(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::base>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->ref()->id == id;
-        }, node);
+        }, node->clazz());
 
-        return curr ? curr->clazz() : meta::base{};
+        return curr ? curr->self() : meta::base{};
     }
 
     /**
@@ -1721,7 +1732,7 @@ public:
     template<typename Op>
     inline void conv(Op op) const noexcept {
         internal::iterate<&internal::type_node::conv>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+            op(node->self());
         }, node);
     }
 
@@ -1741,7 +1752,7 @@ public:
             return node->ref() == type;
         }, node);
 
-        return curr ? curr->clazz() : meta::conv{};
+        return curr ? curr->self() : meta::conv{};
     }
 
     /**
@@ -1752,8 +1763,8 @@ public:
     template<typename Op>
     inline void ctor(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
-        }, node->ctor);
+            op(node->self());
+        }, node->clazz()->ctor);
     }
 
     /**
@@ -1763,8 +1774,8 @@ public:
      */
     template<typename... Args>
     inline meta::ctor ctor() const noexcept {
-        const auto *curr = internal::ctor<Args...>(std::make_index_sequence<sizeof...(Args)>{}, node);
-        return curr ? curr->clazz() : meta::ctor{};
+        const auto *curr = internal::ctor<Args...>(std::make_index_sequence<sizeof...(Args)>{}, node->clazz());
+        return curr ? curr->self() : meta::ctor{};
     }
 
     /**
@@ -1772,7 +1783,7 @@ public:
      * @return The meta destructor associated with the given type, if any.
      */
     inline meta::dtor dtor() const noexcept {
-        return node->dtor ? node->dtor->clazz() : meta::dtor{};
+        return node->clazz()->dtor ? node->clazz()->dtor->self() : meta::dtor{};
     }
 
     /**
@@ -1787,8 +1798,8 @@ public:
     template<typename Op>
     inline void data(Op op) const noexcept {
         internal::iterate<&internal::type_node::data>([op = std::move(op)](auto *node) {
-            op(node->clazz());
-        }, node);
+            op(node->self());
+        }, node->clazz());
     }
 
     /**
@@ -1804,9 +1815,9 @@ public:
     inline meta::data data(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::data>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->id == id;
-        }, node);
+        }, node->clazz());
 
-        return curr ? curr->clazz() : meta::data{};
+        return curr ? curr->self() : meta::data{};
     }
 
     /**
@@ -1822,8 +1833,8 @@ public:
     template<typename Op>
     inline void func(Op op) const noexcept {
         internal::iterate<&internal::type_node::func>([op = std::move(op)](auto *node) {
-            op(node->clazz());
-        }, node);
+            op(node->self());
+        }, node->clazz());
     }
 
     /**
@@ -1839,9 +1850,9 @@ public:
     inline meta::func func(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::func>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->id == id;
-        }, node);
+        }, node->clazz());
 
-        return curr ? curr->clazz() : meta::func{};
+        return curr ? curr->self() : meta::func{};
     }
 
     /**
@@ -1878,7 +1889,9 @@ public:
      * @return True in case of success, false otherwise.
      */
     inline bool destroy(handle handle) const {
-        return node->dtor ? node->dtor->invoke(handle) : node->destroy(handle);
+        return node->clazz()->dtor
+            ? node->clazz()->dtor->invoke(handle)
+            : node->clazz()->destroy(handle);
     }
 
     /**
@@ -1894,8 +1907,8 @@ public:
     inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate<&internal::type_node::prop>([op = std::move(op)](auto *node) {
-            op(node->clazz());
-        }, node);
+            op(node->self());
+        }, node->clazz());
     }
 
     /**
@@ -1914,9 +1927,9 @@ public:
     prop(Key &&key) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::prop>([key = any{std::forward<Key>(key)}](auto *curr) {
             return curr->key() == key;
-        }, node);
+        }, node->clazz());
 
-        return curr ? curr->clazz() : meta::prop{};
+        return curr ? curr->self() : meta::prop{};
     }
 
     /**
@@ -1936,7 +1949,7 @@ public:
     inline bool operator==(const type &other) const noexcept {
         return node == other.node;
     }
-
+    
 private:
     const internal::type_node *node;
 };
@@ -1954,72 +1967,72 @@ inline bool operator!=(const type &lhs, const type &rhs) noexcept {
 
 
 inline meta::type any::type() const noexcept {
-    return node ? node->clazz() : meta::type{};
+    return node ? node->self() : meta::type{};
 }
 
 
 inline meta::type handle::type() const noexcept {
-    return node ? node->clazz() : meta::type{};
+    return node ? node->self() : meta::type{};
 }
 
 
 inline meta::type base::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type base::type() const noexcept {
-    return node->ref()->clazz();
+    return node->ref()->self();
 }
 
 
 inline meta::type conv::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type conv::type() const noexcept {
-    return node->ref()->clazz();
+    return node->ref()->self();
 }
 
 
 inline meta::type ctor::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type ctor::arg(size_type index) const noexcept {
-    return index < size() ? node->arg(index)->clazz() : meta::type{};
+    return index < size() ? node->arg(index)->self() : meta::type{};
 }
 
 
 inline meta::type dtor::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type data::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type data::type() const noexcept {
-    return node->ref()->clazz();
+    return node->ref()->self();
 }
 
 
 inline meta::type func::parent() const noexcept {
-    return node->parent->clazz();
+    return node->parent->self();
 }
 
 
 inline meta::type func::ret() const noexcept {
-    return node->ret()->clazz();
+    return node->ret()->self();
 }
 
 
 inline meta::type func::arg(size_type index) const noexcept {
-    return index < size() ? node->arg(index)->clazz() : meta::type{};
+    return index < size() ? node->arg(index)->self() : meta::type{};
 }
 
 
@@ -2084,7 +2097,7 @@ inline bool destroy([[maybe_unused]] handle handle) {
     bool accepted = false;
 
     if constexpr(std::is_object_v<Type> && !std::is_array_v<Type>) {
-        accepted = (handle.type() == type_info<Type>::resolve()->clazz());
+        accepted = (handle.type() == type_info<Type>::resolve()->self());
 
         if(accepted) {
             static_cast<Type *>(handle.data())->~Type();
@@ -2259,9 +2272,17 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
             std::extent_v<Type>,
+            [](void* ptr) -> void* {
+                if constexpr(std::is_pointer_v<Type>) {
+                    return *static_cast<Type*>(ptr);
+                } else {
+                    return static_cast<Type*>(ptr);
+                }
+            },
             []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &destroy<Type>,
-            []() -> meta::type { return &node; }
+            []() -> meta::type { return &node; },
+            []() -> type_node* { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); }
         };
 
         type = &node;
