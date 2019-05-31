@@ -1,6 +1,5 @@
 #include <type_traits>
 #include <gtest/gtest.h>
-#define TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
 #include <meta/factory.hpp>
 #include <meta/meta.hpp>
 
@@ -26,6 +25,10 @@ struct fat_type: empty_type {
         : foo{value}, bar{value}
     {}
 
+    fat_type(int* value1, int* value2)
+        : foo{ value1 }, bar{ value2 }
+    {}
+    
     int *foo{nullptr};
     int *bar{nullptr};
 
@@ -148,6 +151,7 @@ struct Meta: public ::testing::Test {
                 .base<empty_type>()
                 .ctor<>()
                 .ctor<int*>()
+                .ctor<int*, int*>()
                 .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>("data")
@@ -1403,18 +1407,23 @@ TEST_F(Meta, MetaTypeConstructCastAndConvert) {
 
 TEST_F(Meta, MetaTypeConstructOverload) {
     auto type = meta::resolve<fat_type>();
-    int x = 42;
+    int x = 42, y = 24;
     auto any1 = type.construct();
     auto any2 = type.construct(&x);
+    auto any3 = type.construct(&x, &y);
 
     ASSERT_TRUE(any1);
     ASSERT_TRUE(any2);
+    ASSERT_TRUE(any3);
     ASSERT_TRUE(any1.can_cast<fat_type>());
     ASSERT_TRUE(any2.can_cast<fat_type>());
+    ASSERT_TRUE(any3.can_cast<fat_type>());
     ASSERT_EQ(any1.cast<fat_type>().foo, nullptr);
     ASSERT_EQ(any1.cast<fat_type>().bar, nullptr);
     ASSERT_EQ(any2.cast<fat_type>().foo, &x);
     ASSERT_EQ(any2.cast<fat_type>().bar, &x);
+    ASSERT_EQ(any3.cast<fat_type>().foo, &x);
+    ASSERT_EQ(any3.cast<fat_type>().bar, &y);
 }
 
 
