@@ -146,8 +146,8 @@ struct Meta: public ::testing::Test {
 
         meta::reflect<fat_type>("fat")
                 .base<empty_type>()
-				.ctor<>()
-				.ctor<int*>()
+                .ctor<>()
+                .ctor<int*>()
                 .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>("data")
@@ -1402,19 +1402,19 @@ TEST_F(Meta, MetaTypeConstructCastAndConvert) {
 }
 
 TEST_F(Meta, MetaTypeConstructOverload) {
-	auto type = meta::resolve<fat_type>();
-	int x = 42;
-	auto any1 = type.construct();
-	auto any2 = type.construct(&x);
+    auto type = meta::resolve<fat_type>();
+    int x = 42;
+    auto any1 = type.construct();
+    auto any2 = type.construct(&x);
 
-	ASSERT_TRUE(any1);
-	ASSERT_TRUE(any2);
-	ASSERT_TRUE(any1.can_cast<fat_type>());
-	ASSERT_TRUE(any2.can_cast<fat_type>());
-	ASSERT_EQ(any1.cast<fat_type>().foo, nullptr);
-	ASSERT_EQ(any1.cast<fat_type>().bar, nullptr);
-	ASSERT_EQ(any2.cast<fat_type>().foo, &x);
-	ASSERT_EQ(any2.cast<fat_type>().bar, &x);
+    ASSERT_TRUE(any1);
+    ASSERT_TRUE(any2);
+    ASSERT_TRUE(any1.can_cast<fat_type>());
+    ASSERT_TRUE(any2.can_cast<fat_type>());
+    ASSERT_EQ(any1.cast<fat_type>().foo, nullptr);
+    ASSERT_EQ(any1.cast<fat_type>().bar, nullptr);
+    ASSERT_EQ(any2.cast<fat_type>().foo, &x);
+    ASSERT_EQ(any2.cast<fat_type>().bar, &x);
 }
 
 

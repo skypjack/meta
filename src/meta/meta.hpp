@@ -468,7 +468,7 @@ public:
      */
     template<typename Type>
     inline bool can_cast() const noexcept {
-		const auto *type = internal::type_info<Type>::resolve();
+        const auto *type = internal::type_info<Type>::resolve();
         return internal::can_cast_or_convert<&internal::type_node::base>(node, type);
     }
 
@@ -1861,15 +1861,15 @@ public:
         any any{};
 
 #ifdef TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
-		internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) {
-			if (!any)
-				any = node->invoke(data);
-		}, node);
+        internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) {
+            if (!any)
+                any = node->invoke(data);
+        }, node);
 #else
-		internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) -> bool {
-			any = node->invoke(data);
-			return static_cast<bool>(any);
-		}, node);
+        internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) -> bool {
+            any = node->invoke(data);
+            return static_cast<bool>(any);
+        }, node);
 #endif
 
         return any;
@@ -2105,13 +2105,13 @@ inline bool destroy([[maybe_unused]] handle handle) {
 template<typename Type, typename... Args, std::size_t... Indexes>
 inline any construct(any * const args, std::index_sequence<Indexes...>) {
 #ifdef TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
-	[[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{args == nullptr ? false : (args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
+    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{args == nullptr ? false : (args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
     [[maybe_unused]] std::array<bool, sizeof...(Args)> can_convert{{args == nullptr ? false : (std::get<Indexes>(can_cast) ? false : (args+Indexes)->can_convert<std::remove_cv_t<std::remove_reference_t<Args>>>())...}};
 #else
-	[[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
+    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
     [[maybe_unused]] std::array<bool, sizeof...(Args)> can_convert{{(std::get<Indexes>(can_cast) ? false : (args+Indexes)->can_convert<std::remove_cv_t<std::remove_reference_t<Args>>>())...}};
 #endif
-	any any{};
+    any any{};
 
     if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
         ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
