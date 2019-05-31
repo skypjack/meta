@@ -1,5 +1,6 @@
 #include <type_traits>
 #include <gtest/gtest.h>
+#define TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
 #include <meta/factory.hpp>
 #include <meta/meta.hpp>
 
@@ -145,6 +146,8 @@ struct Meta: public ::testing::Test {
 
         meta::reflect<fat_type>("fat")
                 .base<empty_type>()
+				.ctor<>()
+				.ctor<int*>()
                 .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>("data")
@@ -1396,6 +1399,22 @@ TEST_F(Meta, MetaTypeConstructCastAndConvert) {
     ASSERT_TRUE(any.can_cast<derived_type>());
     ASSERT_EQ(any.cast<derived_type>().i, 42);
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
+}
+
+TEST_F(Meta, MetaTypeConstructOverload) {
+	auto type = meta::resolve<fat_type>();
+	int x = 42;
+	auto any1 = type.construct();
+	auto any2 = type.construct(&x);
+
+	ASSERT_TRUE(any1);
+	ASSERT_TRUE(any2);
+	ASSERT_TRUE(any1.can_cast<fat_type>());
+	ASSERT_TRUE(any2.can_cast<fat_type>());
+	ASSERT_EQ(any1.cast<fat_type>().foo, nullptr);
+	ASSERT_EQ(any1.cast<fat_type>().bar, nullptr);
+	ASSERT_EQ(any2.cast<fat_type>().foo, &x);
+	ASSERT_EQ(any2.cast<fat_type>().bar, &x);
 }
 
 

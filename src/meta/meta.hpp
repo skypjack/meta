@@ -468,7 +468,11 @@ public:
      */
     template<typename Type>
     inline bool can_cast() const noexcept {
-        const auto *type = internal::type_info<Type>::resolve();
+#ifdef TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
+		if (this == nullptr)
+			return false;
+#endif
+		const auto *type = internal::type_info<Type>::resolve();
         return internal::can_cast_or_convert<&internal::type_node::base>(node, type);
     }
 
@@ -518,6 +522,10 @@ public:
      */
     template<typename Type>
     inline bool can_convert() const noexcept {
+#ifdef TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
+		if (this == nullptr)
+			return false;
+#endif
         const auto *type = internal::type_info<Type>::resolve();
         return internal::can_cast_or_convert<&internal::type_node::conv>(node, type);
     }
@@ -1860,10 +1868,17 @@ public:
         std::array<any, sizeof...(Args)> arguments{{std::forward<Args>(args)...}};
         any any{};
 
-        internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto *node) -> bool {
-            any = node->invoke(data);
-            return static_cast<bool>(any);
-        }, node);
+#ifdef TODO_REMOVE_WHEN_MERGED_META_FIX_CTOR_OVERLOAD
+		internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) {
+			if (!any)
+				any = node->invoke(data);
+		}, node);
+#else
+		internal::iterate<&internal::type_node::ctor>([data = arguments.data(), &any](auto * node) -> bool {
+			any = node->invoke(data);
+			return static_cast<bool>(any);
+		}, node);
+#endif
 
         return any;
     }
