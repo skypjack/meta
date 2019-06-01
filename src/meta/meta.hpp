@@ -472,7 +472,8 @@ public:
      */
     template<typename Type, typename... Args>
     void emplace(Args&& ... args) {
-        swap(*this, any{}); //first destroy this (conforms to std::any::emplace)
+        any any0{};
+        swap(*this, any0); //first destroy this (conforms to std::any::emplace)
         any any{ std::in_place_type_t<Type>{}, std::forward<Args>(args)... };
         swap(*this, any);
     }
