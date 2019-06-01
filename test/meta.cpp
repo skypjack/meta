@@ -686,14 +686,30 @@ TEST_F(Meta, MetaAnyLifecycle) {
 TEST_F(Meta, MetaAnyLifecycleConstructExtraMove) {
 
     auto type = meta::resolve<lifecycle_count_type>();
-
-    lifecycle_count_type::counts = {};
-    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 0, 0, 0, 0, 0, 0 }));
+    struct disable_construct_with_emplace
     {
-        auto ao = type.construct();
-        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 1, 0, 1, 0, 0 }));
+        disable_construct_with_emplace()
+        {
+            meta::internal::disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE = true;
+        }
+        ~disable_construct_with_emplace()
+        {
+            meta::internal::disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE = false;
+        }
+    };
+
+    ASSERT_EQ(meta::internal::disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE, false);
+    {
+        disable_construct_with_emplace _;
+        lifecycle_count_type::counts = {};
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+        {
+            auto ao = type.construct();
+            ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).dtor(1).movector(1)));
+        }
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).dtor(2).movector(1)));
     }
-    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 2, 0, 1, 0, 0 }));
+    ASSERT_EQ(meta::internal::disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE, false);
 }
 
 TEST_F(Meta, MetaAnyLifecycleConstructNoExtraMove) {
@@ -701,12 +717,12 @@ TEST_F(Meta, MetaAnyLifecycleConstructNoExtraMove) {
     auto type = meta::resolve<lifecycle_count_type>();
 
     lifecycle_count_type::counts = {};
-    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 0, 0, 0, 0, 0, 0 }));
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
     {
         auto ao = type.construct();
-        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 0, 0, 0, 0, 0 }));
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1)));
     }
-    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 1, 0, 0, 0, 0 }));
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).dtor(1)));
 }
 
 TEST_F(Meta, MetaHandleFromObject) {

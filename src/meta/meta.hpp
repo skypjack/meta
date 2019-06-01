@@ -392,7 +392,7 @@ public:
     }
 
     /**
-     * @brief Emplaces a meta any 
+     * @brief Emplace construct a meta any 
      *
      * This class uses a technique called small buffer optimization (SBO) to
      * completely eliminate the need to allocate memory, where possible.<br/>
@@ -405,10 +405,7 @@ public:
      * @param args Parameters to use to construct the instance.
      */
     template<typename Type, typename... Args>
-    void emplace(Args&& ... args) {
-        if (destroy) { //TODO: any::reset() ????
-            destroy(storage);
-        }
+    any(std::in_place_type_t<Type>, Args&& ... args) {
 
         using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
         node = internal::type_info<Type>::resolve();
@@ -419,7 +416,8 @@ public:
         };
 
         constexpr bool useSBO = (sizeof(actual_type) <= sizeof(void*));
-        //if constexpr (sizeof(actual_type) <= sizeof(void*)) { //TODO: clean. MSVC bug evaluating if constexpr with sizeof... need extra constexpr bool useSBO
+        //TODO: clean. MSVC bug evaluating if constexpr with sizeof... need extra constexpr bool useSBO
+        //if constexpr (sizeof(actual_type) <= sizeof(void*)) { 
         if constexpr (useSBO) {
             new (&storage) actual_type{ std::forward<Args>(args)... };
             instance = &storage;
@@ -436,7 +434,8 @@ public:
         }
         else {
             using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
-            auto* chunk = new chunk_type;
+            auto chunkP = std::make_unique<chunk_type>();
+            auto chunk = chunkP.get();
             instance = new (chunk) actual_type{ std::forward<Args>(args)... };
             new (&storage) chunk_type* { chunk };
 
@@ -453,7 +452,29 @@ public:
                 node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
                 delete chunk;
             };
+
+            chunkP.release();
         }
+    }
+
+    /**
+     * @brief Emplaces a meta any in this instance
+     *
+     * This class uses a technique called small buffer optimization (SBO) to
+     * completely eliminate the need to allocate memory, where possible.<br/>
+     * From the user's point of view, nothing will change, but the elimination
+     * of allocations will reduce the jumps in memory and therefore will avoid
+     * chasing of pointers. This will greatly improve the use of the cache, thus
+     * increasing the overall performance.
+     *
+     * @tparam Type Type of object to use to initialize the container.
+     * @param args Parameters to use to construct the instance.
+     */
+    template<typename Type, typename... Args>
+    void emplace(Args&& ... args) {
+        swap(*this, any{}); //first destroy this (conforms to std::any::emplace)
+        any any{ std::in_place_type_t<Type>{}, std::forward<Args>(args)... };
+        swap(*this, any);
     }
 
     /**
@@ -2159,6 +2180,7 @@ inline bool destroy([[maybe_unused]] handle handle) {
     return accepted;
 }
 
+static bool disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE = false;
 
 template<typename Type, typename... Args, std::size_t... Indexes>
 inline any construct(any * const args, std::index_sequence<Indexes...>) {
@@ -2168,8 +2190,10 @@ inline any construct(any * const args, std::index_sequence<Indexes...>) {
 
     if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
         ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
-        //any = Type{(args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...};
-        any.emplace<Type>((args + Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...);
+        if(disable_construct_with_emplace_TODO_REMOVE_BEFORE_MERGE_EMPLACE)
+            any = Type{ (args + Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()... };
+        else
+            any.emplace<Type>((args + Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...);
     }
 
     return any;
