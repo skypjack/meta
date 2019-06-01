@@ -1812,6 +1812,7 @@ TEST_F(Meta, Unregister) {
     ASSERT_TRUE(meta::unregister<an_abstract_type>());
     ASSERT_TRUE(meta::unregister<another_abstract_type>());
     ASSERT_TRUE(meta::unregister<concrete_type>());
+    ASSERT_TRUE(meta::unregister<lifecycle_count_type>());
     ASSERT_FALSE(meta::unregister<double>());
 
     ASSERT_FALSE(meta::resolve("char"));
@@ -1826,6 +1827,7 @@ TEST_F(Meta, Unregister) {
     ASSERT_FALSE(meta::resolve("an_abstract_type"));
     ASSERT_FALSE(meta::resolve("another_abstract_type"));
     ASSERT_FALSE(meta::resolve("concrete"));
+    ASSERT_FALSE(meta::resolve("lifecycle_count")); 
 
     Meta::SetUpAfterUnregistration();
     meta::any any{42.};
