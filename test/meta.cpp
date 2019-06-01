@@ -1562,6 +1562,11 @@ TEST_F(Meta, MetaTypeConstructSlim) {
     ASSERT_TRUE(any);
     ASSERT_TRUE(any.can_cast<slim_type>());
     ASSERT_EQ(any.cast<slim_type>().foo, &x);
+
+    auto any2 = any;
+    ASSERT_TRUE(any2);
+    ASSERT_TRUE(any2.can_cast<slim_type>());
+    ASSERT_EQ(any2.cast<slim_type>().foo, &x);
 }
 
 TEST_F(Meta, MetaTypeConstructFat) {
@@ -1573,6 +1578,12 @@ TEST_F(Meta, MetaTypeConstructFat) {
     ASSERT_TRUE(any.can_cast<fat_type>());
     ASSERT_EQ(any.cast<fat_type>().foo, &x);
     ASSERT_EQ(any.cast<fat_type>().bar, &x);
+
+    auto any2 = any;
+    ASSERT_TRUE(any2);
+    ASSERT_TRUE(any2.can_cast<fat_type>());
+    ASSERT_EQ(any2.cast<fat_type>().foo, &x);
+    ASSERT_EQ(any2.cast<fat_type>().bar, &x);
 }
 
 TEST_F(Meta, MetaTypeConstruct) {
