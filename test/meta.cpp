@@ -1388,6 +1388,12 @@ TEST_F(Meta, MetaTypeConstructInvalidArgs) {
 }
 
 
+TEST_F(Meta, MetaTypeLessArgs) {
+    auto type = meta::resolve<derived_type>();
+    auto any = type.construct(base_type{});
+    ASSERT_FALSE(any);
+}
+
 TEST_F(Meta, MetaTypeConstructCastAndConvert) {
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(meta::any{derived_type{}}, meta::any{42.}, meta::any{'c'});
@@ -1397,7 +1403,6 @@ TEST_F(Meta, MetaTypeConstructCastAndConvert) {
     ASSERT_EQ(any.cast<derived_type>().i, 42);
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
-
 
 TEST_F(Meta, MetaTypeDestroyDtor) {
     auto type = meta::resolve<empty_type>();
