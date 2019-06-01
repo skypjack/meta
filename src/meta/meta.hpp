@@ -392,6 +392,71 @@ public:
     }
 
     /**
+     * @brief Emplaces a meta any 
+     *
+     * This class uses a technique called small buffer optimization (SBO) to
+     * completely eliminate the need to allocate memory, where possible.<br/>
+     * From the user's point of view, nothing will change, but the elimination
+     * of allocations will reduce the jumps in memory and therefore will avoid
+     * chasing of pointers. This will greatly improve the use of the cache, thus
+     * increasing the overall performance.
+     *
+     * @tparam Type Type of object to use to initialize the container.
+     * @param args Parameters to use to construct the instance.
+     */
+    template<typename Type, typename... Args>
+    void emplace(Args&& ... args) {
+        if (destroy) { //TODO: any::reset() ????
+            destroy(storage);
+        }
+
+        using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
+        node = internal::type_info<Type>::resolve();
+
+
+        comparator = [](const void* lhs, const void* rhs) {
+            return compare(0, *static_cast<const actual_type*>(lhs), *static_cast<const actual_type*>(rhs));
+        };
+
+        constexpr bool useSBO = (sizeof(actual_type) <= sizeof(void*));
+        //if constexpr (sizeof(actual_type) <= sizeof(void*)) { //TODO: clean. MSVC bug evaluating if constexpr with sizeof... need extra constexpr bool useSBO
+        if constexpr (useSBO) {
+            new (&storage) actual_type{ std::forward<Args>(args)... };
+            instance = &storage;
+
+            copy = [](storage_type & storage, const void* instance) -> void* {
+                return new (&storage) actual_type{ *static_cast<const actual_type*>(instance) };
+            };
+
+            destroy = [](storage_type & storage) {
+                auto* node = internal::type_info<Type>::resolve();
+                auto* instance = reinterpret_cast<actual_type*>(&storage);
+                node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
+            };
+        }
+        else {
+            using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
+            auto* chunk = new chunk_type;
+            instance = new (chunk) actual_type{ std::forward<Args>(args)... };
+            new (&storage) chunk_type* { chunk };
+
+            copy = [](storage_type & storage, const void* instance) -> void* {
+                auto* chunk = new chunk_type;
+                new (&storage) chunk_type* { chunk };
+                return new (chunk) actual_type{ *static_cast<const actual_type*>(instance) };
+            };
+
+            destroy = [](storage_type & storage) {
+                auto* node = internal::type_info<Type>::resolve();
+                auto* chunk = *reinterpret_cast<chunk_type * *>(&storage);
+                auto* instance = reinterpret_cast<actual_type*>(chunk);
+                node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
+                delete chunk;
+            };
+        }
+    }
+
+    /**
      * @brief Copy constructor.
      * @param other The instance to copy from.
      */
@@ -2103,7 +2168,8 @@ inline any construct(any * const args, std::index_sequence<Indexes...>) {
 
     if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
         ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
-        any = Type{(args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...};
+        //any = Type{(args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...};
+        any.emplace<Type>((args + Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...);
     }
 
     return any;

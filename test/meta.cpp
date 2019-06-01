@@ -18,6 +18,20 @@ struct empty_type {
     inline static int counter = 0;
 };
 
+struct slim_type {
+    slim_type() = default;
+
+    slim_type(int* value)
+        : foo{ value }
+    {}
+
+    int* foo{ nullptr };
+
+    bool operator==(const slim_type& other) const {
+        return foo == other.foo;
+    }
+};
+
 struct fat_type: empty_type {
     fat_type() = default;
 
@@ -42,7 +56,11 @@ union union_type {
     double d;
 };
 
-bool operator!=(const fat_type &lhs, const fat_type &rhs) {
+bool operator!=(const slim_type &lhs, const slim_type&rhs) {
+    return !(lhs == rhs);
+}
+
+bool operator!=(const fat_type& lhs, const fat_type& rhs) {
     return !(lhs == rhs);
 }
 
@@ -119,6 +137,69 @@ struct another_abstract_type {
     char j{};
 };
 
+struct lifecycle_count_type {
+    struct count
+    {
+        int _ctor{ 0 };
+        int _dtor{ 0 };
+        int _copyctor{ 0 };
+        int _movector{ 0 };
+        int _copy{ 0 };
+        int _move{ 0 };
+        count& ctor(int v) { _ctor = v; return *this; }
+        count& dtor(int v) { _dtor = v; return *this; }
+        count& copyctor(int v) { _copyctor = v; return *this; }
+        count& movector(int v) { _movector = v; return *this; }
+        count& copy(int v) { _copy = v; return *this; }
+        count& move(int v) { _move = v; return *this; }
+        bool operator==(const count& rhs) const
+        {
+            return _ctor == rhs._ctor && _dtor == rhs._dtor
+                && _copyctor == rhs._copyctor && _movector == rhs._movector
+                && _copy == rhs._copy && _move == rhs._move;
+        }
+    };
+    inline static count counts;
+
+    lifecycle_count_type()
+    {
+        ++counts._ctor;
+    }
+    ~lifecycle_count_type()
+    {
+        ++counts._dtor;
+    }
+    lifecycle_count_type(const lifecycle_count_type& rhs)
+        : member1{rhs.member1},
+        member2{rhs.member2}
+    {
+        ++counts._copyctor;
+    }
+    lifecycle_count_type(lifecycle_count_type&& rhs)
+        : member1{ rhs.member1 },
+        member2{ rhs.member2 }
+    {
+        ++counts._movector;
+    }
+    lifecycle_count_type& operator=(const lifecycle_count_type& rhs)
+    {
+        member1 = rhs.member1;
+        member2 = rhs.member2;
+        ++counts._copy;
+        return *this;
+    }
+    lifecycle_count_type& operator=(lifecycle_count_type&& rhs)
+    {
+        member1 = rhs.member1;
+        member2 = rhs.member2;
+        ++counts._move;
+        return *this;
+    }
+
+    int member1;
+    double member2;
+};
+
 struct concrete_type: an_abstract_type, another_abstract_type {
     void f(int v) { i = v*v; } // hide, it's ok :-)
     void g(int v) override { i = -v; }
@@ -147,6 +228,10 @@ struct Meta: public ::testing::Test {
         meta::reflect<empty_type>("empty")
                 .dtor<&empty_type::destroy>();
 
+        meta::reflect<slim_type>("slim")
+                .ctor<>()
+                .ctor<int*>();
+        
         meta::reflect<fat_type>("fat")
                 .base<empty_type>()
                 .ctor<>()
@@ -192,6 +277,10 @@ struct Meta: public ::testing::Test {
                 .base<an_abstract_type>()
                 .base<another_abstract_type>()
                 .func<&concrete_type::f>("f");
+
+        meta::reflect<lifecycle_count_type>("lifecycle_count")
+                .ctor();
+
     }
 
     static void SetUpAfterUnregistration() {
@@ -529,6 +618,95 @@ TEST_F(Meta, MetaAnyConstConvert) {
     ASSERT_EQ(any.cast<double>(), 42.);
     ASSERT_EQ(other.type(), meta::resolve<int>());
     ASSERT_EQ(other.cast<int>(), 42);
+}
+
+TEST_F(Meta, MetaAnyLifecycle) {
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+    
+    lifecycle_count_type obj;
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1)));
+
+    {
+        auto obj2 = obj;
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).copyctor(1)));
+
+        obj2 = obj;
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).copyctor(1).copy(1)));
+
+        auto obj3 = std::move(obj);
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).copyctor(1).copy(1).movector(1)));
+
+        obj = std::move(obj3);
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).copyctor(1).copy(1).movector(1).move(1)));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.ctor(1).copyctor(1).copy(1).movector(1).move(1).dtor(2)));
+
+    //test any by copy
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+    {
+        meta::any ao(obj);
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.copyctor(1)));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.copyctor(1).dtor(1)));
+
+    //test any copy
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+    {
+        meta::any ao;
+        ao = obj;
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.copyctor(1)));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.copyctor(1).dtor(1)));
+
+    //test any by move
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+    {
+        meta::any ao(std::move(obj));
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.movector(1)));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.movector(1).dtor(1)));
+
+    //test any move
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}));
+    {
+        meta::any ao;
+        ao = std::move(obj);
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.movector(1)));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{}.movector(1).dtor(1)));
+
+
+}
+
+TEST_F(Meta, MetaAnyLifecycleConstructExtraMove) {
+
+    auto type = meta::resolve<lifecycle_count_type>();
+
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 0, 0, 0, 0, 0, 0 }));
+    {
+        auto ao = type.construct();
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 1, 0, 1, 0, 0 }));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 2, 0, 1, 0, 0 }));
+}
+
+TEST_F(Meta, MetaAnyLifecycleConstructNoExtraMove) {
+
+    auto type = meta::resolve<lifecycle_count_type>();
+
+    lifecycle_count_type::counts = {};
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 0, 0, 0, 0, 0, 0 }));
+    {
+        auto ao = type.construct();
+        ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 0, 0, 0, 0, 0 }));
+    }
+    ASSERT_EQ(lifecycle_count_type::counts, (lifecycle_count_type::count{ 1, 1, 0, 0, 0, 0 }));
 }
 
 TEST_F(Meta, MetaHandleFromObject) {
@@ -1365,6 +1543,27 @@ TEST_F(Meta, MetaTypeFunc) {
 
     ASSERT_EQ(counter, 6);
     ASSERT_TRUE(type.func("f1"));
+}
+
+TEST_F(Meta, MetaTypeConstructSlim) {
+    auto type = meta::resolve<slim_type>();
+    int x = 42;
+    auto any = type.construct(&x);
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<slim_type>());
+    ASSERT_EQ(any.cast<slim_type>().foo, &x);
+}
+
+TEST_F(Meta, MetaTypeConstructFat) {
+    auto type = meta::resolve<fat_type>();
+    int x = 42;
+    auto any = type.construct(&x);
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<fat_type>());
+    ASSERT_EQ(any.cast<fat_type>().foo, &x);
+    ASSERT_EQ(any.cast<fat_type>().bar, &x);
 }
 
 TEST_F(Meta, MetaTypeConstruct) {
