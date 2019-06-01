@@ -1781,6 +1781,7 @@ TEST_F(Meta, Unregister) {
     ASSERT_TRUE(meta::unregister<base_type>());
     ASSERT_TRUE(meta::unregister<derived_type>());
     ASSERT_TRUE(meta::unregister<empty_type>());
+    ASSERT_TRUE(meta::unregister<slim_type>());
     ASSERT_TRUE(meta::unregister<fat_type>());
     ASSERT_TRUE(meta::unregister<data_type>());
     ASSERT_TRUE(meta::unregister<func_type>());
@@ -1794,6 +1795,7 @@ TEST_F(Meta, Unregister) {
     ASSERT_FALSE(meta::resolve("base"));
     ASSERT_FALSE(meta::resolve("derived"));
     ASSERT_FALSE(meta::resolve("empty"));
+    ASSERT_FALSE(meta::resolve("slim"));
     ASSERT_FALSE(meta::resolve("fat"));
     ASSERT_FALSE(meta::resolve("data"));
     ASSERT_FALSE(meta::resolve("func"));
