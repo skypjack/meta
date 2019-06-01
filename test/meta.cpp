@@ -136,12 +136,12 @@ struct another_abstract_type {
 struct lifecycle_count_type {
     struct count
     {
-        int _ctor{ 0 };
-        int _dtor{ 0 };
-        int _copyctor{ 0 };
-        int _movector{ 0 };
-        int _copy{ 0 };
-        int _move{ 0 };
+        int _ctor;
+        int _dtor;
+        int _copyctor;
+        int _movector;
+        int _copy;
+        int _move;
         count& ctor(int v) { _ctor = v; return *this; }
         count& dtor(int v) { _dtor = v; return *this; }
         count& copyctor(int v) { _copyctor = v; return *this; }
