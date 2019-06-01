@@ -230,6 +230,8 @@ struct Meta: public ::testing::Test {
         
         meta::reflect<fat_type>("fat")
                 .base<empty_type>()
+                .ctor<>()
+                .ctor<int*>()
                 .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>("data")
