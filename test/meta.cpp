@@ -196,6 +196,17 @@ struct lifecycle_count_type {
     double member2;
 };
 
+struct throwing_type
+{
+    throwing_type(int n)
+    {
+        if (n == 0)
+            throw std::invalid_argument("");
+    }
+    double a;
+    double b;
+};
+
 struct concrete_type: an_abstract_type, another_abstract_type {
     void f(int v) { i = v*v; } // hide, it's ok :-)
     void g(int v) override { i = -v; }
@@ -476,6 +487,66 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
     ASSERT_EQ(std::as_const(other).cast<fat_type>(), instance);
     ASSERT_EQ(other, meta::any{instance});
     ASSERT_NE(other, fat_type{});
+}
+
+TEST_F(Meta, MetaAnySBOEmplaceConstruction) {
+    meta::any any{ std::in_place_type<int>, 42 };
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<int>());
+    ASSERT_EQ(any.cast<int>(), 42);
+    ASSERT_EQ(std::as_const(any).cast<int>(), 42);
+    ASSERT_EQ(any, meta::any{ 42 });
+    ASSERT_NE(any, 0);
+}
+
+TEST_F(Meta, MetaAnyNoSBOEmplaceConstruction) {
+    int value = 42;
+    fat_type instance{ &value };
+    meta::any any{ std::in_place_type<fat_type>, &value };
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<fat_type>());
+    ASSERT_EQ(any.cast<fat_type>(), instance);
+    ASSERT_EQ(std::as_const(any).cast<fat_type>(), instance);
+    ASSERT_EQ(any, meta::any{ instance });
+    ASSERT_NE(any, fat_type{});
+}
+
+TEST_F(Meta, MetaAnySBOEmplace) {
+    meta::any any{ };
+    any.emplace<int>(42);
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<int>());
+    ASSERT_EQ(any.cast<int>(), 42);
+    ASSERT_EQ(std::as_const(any).cast<int>(), 42);
+    ASSERT_EQ(any, meta::any{ 42 });
+    ASSERT_NE(any, 0);
+}
+
+TEST_F(Meta, MetaAnyNoSBOEmplace) {
+    int value = 42;
+    fat_type instance{ &value };
+    meta::any any{ };
+    any.emplace<fat_type>(&value);
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<fat_type>());
+    ASSERT_EQ(any.cast<fat_type>(), instance);
+    ASSERT_EQ(std::as_const(any).cast<fat_type>(), instance);
+    ASSERT_EQ(any, meta::any{ instance });
+    ASSERT_NE(any, fat_type{});
+}
+
+TEST_F(Meta, MetaAnyNoSBOEmplaceThrowing) {
+    meta::any any{};
+
+    any.emplace<throwing_type>(42);
+    ASSERT_TRUE(any);
+
+    ASSERT_THROW(any.emplace<throwing_type>(0), std::invalid_argument);
+    ASSERT_FALSE(any);
 }
 
 TEST_F(Meta, MetaAnySBODestruction) {

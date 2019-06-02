@@ -371,7 +371,8 @@ public:
             };
         } else {
             using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
-            auto *chunk = new chunk_type;
+            auto chunkP = std::make_unique<chunk_type>();
+            auto *chunk = chunkP.get();
             instance = new (chunk) actual_type{std::forward<Type>(type)};
             new (&storage) chunk_type *{chunk};
 
@@ -388,6 +389,7 @@ public:
                 node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
                 delete chunk;
             };
+            chunkP.release();
         }
     }
 
@@ -400,6 +402,8 @@ public:
      * of allocations will reduce the jumps in memory and therefore will avoid
      * chasing of pointers. This will greatly improve the use of the cache, thus
      * increasing the overall performance.
+     *
+     * Throws any exception thrown by the constructor of the contained type.
      *
      * @tparam Type Type of object to use to initialize the container.
      * @param args Parameters to use to construct the instance.
@@ -466,6 +470,10 @@ public:
      * of allocations will reduce the jumps in memory and therefore will avoid
      * chasing of pointers. This will greatly improve the use of the cache, thus
      * increasing the overall performance.
+     *
+     * Throws any exception thrown by Type's constructor.
+     * If an exception is thrown, the previously contained object (if any) has 
+     * been destroyed, and *this does not contain a value.
      *
      * @tparam Type Type of object to use to initialize the container.
      * @param args Parameters to use to construct the instance.
