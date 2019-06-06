@@ -484,7 +484,7 @@ public:
      * @brief Returns an opaque pointer to the contained instance.
      * @return An opaque pointer the contained instance, if any.
      */
-    inline const void * data() const noexcept {
+    const void * data() const noexcept {
         return instance;
     }
 
@@ -492,7 +492,7 @@ public:
      * @brief Returns an opaque pointer to the contained instance.
      * @return An opaque pointer the contained instance, if any.
      */
-    inline void * data() noexcept {
+    void * data() noexcept {
         return const_cast<void *>(std::as_const(*this).data());
     }
 
@@ -502,7 +502,7 @@ public:
      * @return True if the cast is viable, false otherwise.
      */
     template<typename Type>
-    inline bool can_cast() const noexcept {
+    bool can_cast() const noexcept {
         const auto *type = internal::type_info<Type>::resolve();
         return internal::can_cast_or_convert<&internal::type_node::base>(node, type);
     }
@@ -522,7 +522,7 @@ public:
      * @return A reference to the contained instance.
      */
     template<typename Type>
-    inline const Type & cast() const noexcept {
+    const Type & cast() const noexcept {
         assert(can_cast<Type>());
         return *internal::try_cast<Type>(node, instance);
     }
@@ -542,7 +542,7 @@ public:
      * @return A reference to the contained instance.
      */
     template<typename Type>
-    inline Type & cast() noexcept {
+    Type & cast() noexcept {
         return const_cast<Type &>(std::as_const(*this).cast<Type>());
     }
 
@@ -552,7 +552,7 @@ public:
      * @return True if the conversion is viable, false otherwise.
      */
     template<typename Type>
-    inline bool can_convert() const noexcept {
+    bool can_convert() const noexcept {
         const auto *type = internal::type_info<Type>::resolve();
         return internal::can_cast_or_convert<&internal::type_node::conv>(node, type);
     }
@@ -564,7 +564,7 @@ public:
      * one otherwise.
      */
     template<typename Type>
-    inline any convert() const noexcept {
+    any convert() const noexcept {
         const auto *type = internal::type_info<Type>::resolve();
         any any{};
 
@@ -589,7 +589,7 @@ public:
      * @return True if the conversion is possible, false otherwise.
      */
     template<typename Type>
-    inline bool convert() noexcept {
+    bool convert() noexcept {
         bool valid = (node == internal::type_info<Type>::resolve());
 
         if(!valid) {
@@ -621,7 +621,7 @@ public:
      * @brief Returns false if a container is empty, true otherwise.
      * @return False if the container is empty, true otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return destroy_fn;
     }
 
@@ -631,7 +631,7 @@ public:
      * @return False if the two containers differ in their content, true
      * otherwise.
      */
-    inline bool operator==(const any &other) const noexcept {
+    bool operator==(const any &other) const noexcept {
         return (!instance && !other.instance) || (instance && other.instance && node == other.node && compare_fn(instance, other.instance));
     }
 
@@ -737,7 +737,7 @@ public:
      * @return A pointer to the contained instance.
      */
     template<typename Type>
-    inline const Type * try_cast() const noexcept {
+    const Type * try_cast() const noexcept {
         return internal::try_cast<Type>(node, instance);
     }
 
@@ -756,7 +756,7 @@ public:
      * @return A pointer to the contained instance.
      */
     template<typename Type>
-    inline Type * try_cast() noexcept {
+    Type * try_cast() noexcept {
         return const_cast<Type *>(std::as_const(*this).try_cast<Type>());
     }
 
@@ -764,7 +764,7 @@ public:
      * @brief Returns an opaque pointer to the contained instance.
      * @return An opaque pointer the contained instance, if any.
      */
-    inline const void * data() const noexcept {
+    const void * data() const noexcept {
         return instance;
     }
 
@@ -772,7 +772,7 @@ public:
      * @brief Returns an opaque pointer to the contained instance.
      * @return An opaque pointer the contained instance, if any.
      */
-    inline void * data() noexcept {
+    void * data() noexcept {
         return const_cast<void *>(std::as_const(*this).data());
     }
 
@@ -780,7 +780,7 @@ public:
      * @brief Returns false if a handle is empty, true otherwise.
      * @return False if the handle is empty, true otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return instance;
     }
 
@@ -811,13 +811,13 @@ class prop final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline prop(const internal::prop_node *node) noexcept
+    prop(const internal::prop_node *node) noexcept
         : node{node}
     {}
 
 public:
     /*! @brief Default constructor. */
-    inline prop() noexcept
+    prop() noexcept
         : node{nullptr}
     {}
 
@@ -825,7 +825,7 @@ public:
      * @brief Returns the stored key.
      * @return A meta any containing the key stored with the given property.
      */
-    inline any key() const noexcept {
+    any key() const noexcept {
         return node->key();
     }
 
@@ -833,7 +833,7 @@ public:
      * @brief Returns the stored value.
      * @return A meta any containing the value stored with the given property.
      */
-    inline any value() const noexcept {
+    any value() const noexcept {
         return node->value();
     }
 
@@ -841,7 +841,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -851,7 +851,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const prop &other) const noexcept {
+    bool operator==(const prop &other) const noexcept {
         return node == other.node;
     }
 
@@ -881,13 +881,13 @@ class base final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline base(const internal::base_node *node) noexcept
+    base(const internal::base_node *node) noexcept
         : node{node}
     {}
 
 public:
     /*! @brief Default constructor. */
-    inline base() noexcept
+    base() noexcept
         : node{nullptr}
     {}
 
@@ -908,7 +908,7 @@ public:
      * @param instance The instance to cast.
      * @return An opaque pointer to the base type.
      */
-    inline void * cast(void *instance) const noexcept {
+    void * cast(void *instance) const noexcept {
         return node->cast(instance);
     }
 
@@ -916,7 +916,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -926,7 +926,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const base &other) const noexcept {
+    bool operator==(const base &other) const noexcept {
         return node == other.node;
     }
 
@@ -956,13 +956,13 @@ class conv final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline conv(const internal::conv_node *node) noexcept
+    conv(const internal::conv_node *node) noexcept
         : node{node}
     {}
 
 public:
     /*! @brief Default constructor. */
-    inline conv() noexcept
+    conv() noexcept
         : node{nullptr}
     {}
 
@@ -983,7 +983,7 @@ public:
      * @param instance The instance to convert.
      * @return An opaque pointer to the instance to convert.
      */
-    inline any convert(void *instance) const noexcept {
+    any convert(void *instance) const noexcept {
         return node->convert(instance);
     }
 
@@ -991,7 +991,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1001,7 +1001,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const conv &other) const noexcept {
+    bool operator==(const conv &other) const noexcept {
         return node == other.node;
     }
 
@@ -1031,7 +1031,7 @@ class ctor final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline ctor(const internal::ctor_node *node) noexcept
+    ctor(const internal::ctor_node *node) noexcept
         : node{node}
     {}
 
@@ -1040,7 +1040,7 @@ public:
     using size_type = typename internal::ctor_node::size_type;
 
     /*! @brief Default constructor. */
-    inline ctor() noexcept
+    ctor() noexcept
         : node{nullptr}
     {}
 
@@ -1054,7 +1054,7 @@ public:
      * @brief Returns the number of arguments accepted by a meta constructor.
      * @return The number of arguments accepted by the meta constructor.
      */
-    inline size_type size() const noexcept {
+    size_type size() const noexcept {
         return node->size;
     }
 
@@ -1094,7 +1094,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
+    std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
             op(node->clazz());
@@ -1108,7 +1108,7 @@ public:
      * @return The property associated with the given key, if any.
      */
     template<typename Key>
-    inline std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
+    std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
         const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
             return curr->key() == key;
@@ -1121,7 +1121,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1131,7 +1131,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const ctor &other) const noexcept {
+    bool operator==(const ctor &other) const noexcept {
         return node == other.node;
     }
 
@@ -1161,13 +1161,13 @@ class dtor final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline dtor(const internal::dtor_node *node) noexcept
+    dtor(const internal::dtor_node *node) noexcept
         : node{node}
     {}
 
 public:
     /*! @brief Default constructor. */
-    inline dtor() noexcept
+    dtor() noexcept
         : node{nullptr}
     {}
 
@@ -1187,7 +1187,7 @@ public:
      * @param handle An opaque pointer to an instance of the underlying type.
      * @return True in case of success, false otherwise.
      */
-    inline bool invoke(handle handle) const {
+    bool invoke(handle handle) const {
         return node->invoke(handle);
     }
 
@@ -1195,7 +1195,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1205,7 +1205,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const dtor &other) const noexcept {
+    bool operator==(const dtor &other) const noexcept {
         return node == other.node;
     }
 
@@ -1235,13 +1235,13 @@ class data final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline data(const internal::data_node *node) noexcept
+    data(const internal::data_node *node) noexcept
         : node{node}
     {}
 
 public:
     /*! @brief Default constructor. */
-    inline data() noexcept
+    data() noexcept
         : node{nullptr}
     {}
 
@@ -1249,7 +1249,7 @@ public:
      * @brief Returns the name assigned to a given meta data.
      * @return The name assigned to the meta data.
      */
-    inline const char * name() const noexcept {
+    const char * name() const noexcept {
         return node->name;
     }
 
@@ -1263,7 +1263,7 @@ public:
      * @brief Indicates whether a given meta data is constant or not.
      * @return True if the meta data is constant, false otherwise.
      */
-    inline bool is_const() const noexcept {
+    bool is_const() const noexcept {
         return node->is_const;
     }
 
@@ -1275,7 +1275,7 @@ public:
      *
      * @return True if the meta data is static, false otherwise.
      */
-    inline bool is_static() const noexcept {
+    bool is_static() const noexcept {
         return node->is_static;
     }
 
@@ -1300,7 +1300,7 @@ public:
      * @return True in case of success, false otherwise.
      */
     template<typename Type>
-    inline bool set(handle handle, Type &&value) const {
+    bool set(handle handle, Type &&value) const {
         return node->set(handle, any{}, std::forward<Type>(value));
     }
 
@@ -1320,7 +1320,7 @@ public:
      * @return True in case of success, false otherwise.
      */
     template<typename Type>
-    inline bool set(handle handle, std::size_t index, Type &&value) const {
+    bool set(handle handle, std::size_t index, Type &&value) const {
         assert(index < node->ref()->extent);
         return node->set(handle, index, std::forward<Type>(value));
     }
@@ -1334,7 +1334,7 @@ public:
      * @param handle An opaque pointer to an instance of the underlying type.
      * @return A meta any containing the value of the underlying variable.
      */
-    inline any get(handle handle) const noexcept {
+    any get(handle handle) const noexcept {
         return node->get(handle, any{});
     }
 
@@ -1348,7 +1348,7 @@ public:
      * @param index Position of the underlying element to get.
      * @return A meta any containing the value of the underlying element.
      */
-    inline any get(handle handle, std::size_t index) const noexcept {
+    any get(handle handle, std::size_t index) const noexcept {
         assert(index < node->ref()->extent);
         return node->get(handle, index);
     }
@@ -1359,7 +1359,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
+    std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
             op(node->clazz());
@@ -1373,7 +1373,7 @@ public:
      * @return The property associated with the given key, if any.
      */
     template<typename Key>
-    inline std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
+    std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
         const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
             return curr->key() == key;
@@ -1386,7 +1386,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1396,7 +1396,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const data &other) const noexcept {
+    bool operator==(const data &other) const noexcept {
         return node == other.node;
     }
 
@@ -1426,7 +1426,7 @@ class func final {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    inline func(const internal::func_node *node) noexcept
+    func(const internal::func_node *node) noexcept
         : node{node}
     {}
 
@@ -1435,7 +1435,7 @@ public:
     using size_type = typename internal::func_node::size_type;
 
     /*! @brief Default constructor. */
-    inline func() noexcept
+    func() noexcept
         : node{nullptr}
     {}
 
@@ -1443,7 +1443,7 @@ public:
      * @brief Returns the name assigned to a given meta function.
      * @return The name assigned to the meta function.
      */
-    inline const char * name() const noexcept {
+    const char * name() const noexcept {
         return node->name;
     }
 
@@ -1457,7 +1457,7 @@ public:
      * @brief Returns the number of arguments accepted by a meta function.
      * @return The number of arguments accepted by the meta function.
      */
-    inline size_type size() const noexcept {
+    size_type size() const noexcept {
         return node->size;
     }
 
@@ -1465,7 +1465,7 @@ public:
      * @brief Indicates whether a given meta function is constant or not.
      * @return True if the meta function is constant, false otherwise.
      */
-    inline bool is_const() const noexcept {
+    bool is_const() const noexcept {
         return node->is_const;
     }
 
@@ -1477,7 +1477,7 @@ public:
      *
      * @return True if the meta function is static, false otherwise.
      */
-    inline bool is_static() const noexcept {
+    bool is_static() const noexcept {
         return node->is_static;
     }
 
@@ -1527,7 +1527,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
+    std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
             op(node->clazz());
@@ -1541,7 +1541,7 @@ public:
      * @return The property associated with the given key, if any.
      */
     template<typename Key>
-    inline std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
+    std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
         const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
             return curr->key() == key;
@@ -1554,7 +1554,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1564,7 +1564,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const func &other) const noexcept {
+    bool operator==(const func &other) const noexcept {
         return node == other.node;
     }
 
@@ -1597,7 +1597,7 @@ class type final {
     /*! @brief A meta node is allowed to create meta objects. */
     template<typename...> friend struct internal::info_node;
 
-    inline type(const internal::type_node *node) noexcept
+    type(const internal::type_node *node) noexcept
         : node{node}
     {}
 
@@ -1606,7 +1606,7 @@ public:
     using size_type = typename internal::type_node::size_type;
 
     /*! @brief Default constructor. */
-    inline type() noexcept
+    type() noexcept
         : node{nullptr}
     {}
 
@@ -1614,7 +1614,7 @@ public:
      * @brief Returns the name assigned to a given meta type.
      * @return The name assigned to the meta type.
      */
-    inline const char * name() const noexcept {
+    const char * name() const noexcept {
         return node->name;
     }
 
@@ -1622,7 +1622,7 @@ public:
      * @brief Indicates whether a given meta type refers to void or not.
      * @return True if the underlying type is void, false otherwise.
      */
-    inline bool is_void() const noexcept {
+    bool is_void() const noexcept {
         return node->is_void;
     }
 
@@ -1631,7 +1631,7 @@ public:
      * not.
      * @return True if the underlying type is an integral type, false otherwise.
      */
-    inline bool is_integral() const noexcept {
+    bool is_integral() const noexcept {
         return node->is_integral;
     }
 
@@ -1641,7 +1641,7 @@ public:
      * @return True if the underlying type is a floating-point type, false
      * otherwise.
      */
-    inline bool is_floating_point() const noexcept {
+    bool is_floating_point() const noexcept {
         return node->is_floating_point;
     }
 
@@ -1650,7 +1650,7 @@ public:
      * not.
      * @return True if the underlying type is an array type, false otherwise.
      */
-    inline bool is_array() const noexcept {
+    bool is_array() const noexcept {
         return node->is_array;
     }
 
@@ -1658,7 +1658,7 @@ public:
      * @brief Indicates whether a given meta type refers to an enum or not.
      * @return True if the underlying type is an enum, false otherwise.
      */
-    inline bool is_enum() const noexcept {
+    bool is_enum() const noexcept {
         return node->is_enum;
     }
 
@@ -1666,7 +1666,7 @@ public:
      * @brief Indicates whether a given meta type refers to an union or not.
      * @return True if the underlying type is an union, false otherwise.
      */
-    inline bool is_union() const noexcept {
+    bool is_union() const noexcept {
         return node->is_union;
     }
 
@@ -1674,7 +1674,7 @@ public:
      * @brief Indicates whether a given meta type refers to a class or not.
      * @return True if the underlying type is a class, false otherwise.
      */
-    inline bool is_class() const noexcept {
+    bool is_class() const noexcept {
         return node->is_class;
     }
 
@@ -1682,7 +1682,7 @@ public:
      * @brief Indicates whether a given meta type refers to a pointer or not.
      * @return True if the underlying type is a pointer, false otherwise.
      */
-    inline bool is_pointer() const noexcept {
+    bool is_pointer() const noexcept {
         return node->is_pointer;
     }
 
@@ -1691,7 +1691,7 @@ public:
      * not.
      * @return True if the underlying type is a function, false otherwise.
      */
-    inline bool is_function() const noexcept {
+    bool is_function() const noexcept {
         return node->is_function;
     }
 
@@ -1701,7 +1701,7 @@ public:
      * @return True if the underlying type is a pointer to data member, false
      * otherwise.
      */
-    inline bool is_member_object_pointer() const noexcept {
+    bool is_member_object_pointer() const noexcept {
         return node->is_member_object_pointer;
     }
 
@@ -1711,7 +1711,7 @@ public:
      * @return True if the underlying type is a pointer to member function,
      * false otherwise.
      */
-    inline bool is_member_function_pointer() const noexcept {
+    bool is_member_function_pointer() const noexcept {
         return node->is_member_function_pointer;
     }
 
@@ -1721,7 +1721,7 @@ public:
      * @return The number of elements of the array if the underlying type is an
      * array type, 0 otherwise.
      */
-    inline size_type extent() const noexcept {
+    size_type extent() const noexcept {
         return node->extent;
     }
 
@@ -1730,7 +1730,7 @@ public:
      * @return The meta type for which the pointer is defined or this meta type
      * if it doesn't refer to a pointer type.
      */
-    inline meta::type remove_pointer() const noexcept {
+    meta::type remove_pointer() const noexcept {
         return node->remove_pointer();
     }
 
@@ -1743,7 +1743,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline void base(Op op) const noexcept {
+    void base(Op op) const noexcept {
         internal::iterate<&internal::type_node::base>([op = std::move(op)](auto *node) {
             op(node->clazz());
         }, node);
@@ -1757,7 +1757,7 @@ public:
      * @param str The name to use to search for a meta base.
      * @return The meta base associated with the given name, if any.
      */
-    inline meta::base base(const char *str) const noexcept {
+    meta::base base(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::base>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->ref()->id == id;
         }, node);
@@ -1775,7 +1775,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline void conv(Op op) const noexcept {
+    void conv(Op op) const noexcept {
         internal::iterate<&internal::type_node::conv>([op = std::move(op)](auto *node) {
             op(node->clazz());
         }, node);
@@ -1792,7 +1792,7 @@ public:
      * any.
      */
     template<typename Type>
-    inline meta::conv conv() const noexcept {
+    meta::conv conv() const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::conv>([type = internal::type_info<Type>::resolve()](auto *node) {
             return node->ref() == type;
         }, node);
@@ -1806,7 +1806,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline void ctor(Op op) const noexcept {
+    void ctor(Op op) const noexcept {
         internal::iterate([op = std::move(op)](auto *node) {
             op(node->clazz());
         }, node->ctor);
@@ -1818,7 +1818,7 @@ public:
      * @return The requested meta constructor, if any.
      */
     template<typename... Args>
-    inline meta::ctor ctor() const noexcept {
+    meta::ctor ctor() const noexcept {
         const auto *curr = internal::ctor<Args...>(std::make_index_sequence<sizeof...(Args)>{}, node);
         return curr ? curr->clazz() : meta::ctor{};
     }
@@ -1827,7 +1827,7 @@ public:
      * @brief Returns the meta destructor associated with a given type.
      * @return The meta destructor associated with the given type, if any.
      */
-    inline meta::dtor dtor() const noexcept {
+    meta::dtor dtor() const noexcept {
         return node->dtor ? node->dtor->clazz() : meta::dtor{};
     }
 
@@ -1841,7 +1841,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline void data(Op op) const noexcept {
+    void data(Op op) const noexcept {
         internal::iterate<&internal::type_node::data>([op = std::move(op)](auto *node) {
             op(node->clazz());
         }, node);
@@ -1857,7 +1857,7 @@ public:
      * @param str The name to use to search for a meta data.
      * @return The meta data associated with the given name, if any.
      */
-    inline meta::data data(const char *str) const noexcept {
+    meta::data data(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::data>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->id == id;
         }, node);
@@ -1876,7 +1876,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline void func(Op op) const noexcept {
+    void func(Op op) const noexcept {
         internal::iterate<&internal::type_node::func>([op = std::move(op)](auto *node) {
             op(node->clazz());
         }, node);
@@ -1892,7 +1892,7 @@ public:
      * @param str The name to use to search for a meta function.
      * @return The meta function associated with the given name, if any.
      */
-    inline meta::func func(const char *str) const noexcept {
+    meta::func func(const char *str) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::func>([id = std::hash<std::string>{}(str)](auto *node) {
             return node->id == id;
         }, node);
@@ -1936,7 +1936,7 @@ public:
      * @param handle An opaque pointer to an instance of the underlying type.
      * @return True in case of success, false otherwise.
      */
-    inline bool destroy(handle handle) const {
+    bool destroy(handle handle) const {
         return node->dtor ? node->dtor->invoke(handle) : node->destroy(handle);
     }
 
@@ -1950,7 +1950,7 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    inline std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
+    std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
         internal::iterate<&internal::type_node::prop>([op = std::move(op)](auto *node) {
             op(node->clazz());
@@ -1969,7 +1969,7 @@ public:
      * @return The property associated with the given key, if any.
      */
     template<typename Key>
-    inline std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
+    std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
         const auto *curr = internal::find_if<&internal::type_node::prop>([key = any{std::forward<Key>(key)}](auto *curr) {
             return curr->key() == key;
@@ -1982,7 +1982,7 @@ public:
      * @brief Returns true if a meta object is valid, false otherwise.
      * @return True if the meta object is valid, false otherwise.
      */
-    inline explicit operator bool() const noexcept {
+    explicit operator bool() const noexcept {
         return node;
     }
 
@@ -1992,7 +1992,7 @@ public:
      * @return True if the two meta objects refer to the same node, false
      * otherwise.
      */
-    inline bool operator==(const type &other) const noexcept {
+    bool operator==(const type &other) const noexcept {
         return node == other.node;
     }
 
@@ -2105,7 +2105,7 @@ struct function_helper<Ret(Args...)> {
 
     static constexpr auto size = sizeof...(Args);
 
-    inline static auto arg(typename internal::func_node::size_type index) {
+    static auto arg(typename internal::func_node::size_type index) {
         return std::array<type_node *, sizeof...(Args)>{{type_info<Args>::resolve()...}}[index];
     }
 };

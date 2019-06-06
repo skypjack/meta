@@ -40,11 +40,11 @@ class factory {
     static_assert(std::is_object_v<Type> && !(std::is_const_v<Type> || std::is_volatile_v<Type>));
 
     template<typename Node>
-    inline bool duplicate(const std::size_t &id, const Node *node) noexcept {
+    bool duplicate(const std::size_t &id, const Node *node) noexcept {
         return node ? node->id == id || duplicate(id, node->next) : false;
     }
 
-    inline bool duplicate(const any &key, const internal::prop_node *node) noexcept {
+    bool duplicate(const any &key, const internal::prop_node *node) noexcept {
         return node ? node->key() == key || duplicate(key, node->next) : false;
     }
 
