@@ -38,7 +38,7 @@ union union_type {
     double d;
 };
 
-bool operator!=(const fat_type &lhs, const fat_type &rhs) {
+bool operator!=(const fat_type& lhs, const fat_type& rhs) {
     return !(lhs == rhs);
 }
 
@@ -259,6 +259,21 @@ TEST_F(Meta, MetaAnyEmpty) {
     ASSERT_NE(any, meta::any{'c'});
 }
 
+TEST_F(Meta, MetaAnySBOInPlaceConstruction) {
+    meta::any any{std::in_place_type<int>, 42};
+
+    ASSERT_TRUE(any);
+    ASSERT_FALSE(any.can_cast<void>());
+    ASSERT_TRUE(any.can_cast<int>());
+    ASSERT_EQ(any.cast<int>(), 42);
+    ASSERT_EQ(std::as_const(any).cast<int>(), 42);
+    ASSERT_NE(any.data(), nullptr);
+    ASSERT_NE(std::as_const(any).data(), nullptr);
+    ASSERT_EQ(any, (meta::any{std::in_place_type<int>, 42}));
+    ASSERT_EQ(any, meta::any{42});
+    ASSERT_NE(any, meta::any{3});
+}
+
 TEST_F(Meta, MetaAnySBOCopyConstruction) {
     meta::any any{42};
     meta::any other{any};
@@ -317,6 +332,23 @@ TEST_F(Meta, MetaAnySBOMoveAssignment) {
     ASSERT_EQ(std::as_const(other).cast<int>(), 42);
     ASSERT_EQ(other, meta::any{42});
     ASSERT_NE(other, meta::any{0});
+}
+
+TEST_F(Meta, MetaAnyNoSBOInPlaceConstruction) {
+    int value = 42;
+    fat_type instance{&value};
+    meta::any any{std::in_place_type<fat_type>, instance};
+
+    ASSERT_TRUE(any);
+    ASSERT_FALSE(any.can_cast<void>());
+    ASSERT_TRUE(any.can_cast<fat_type>());
+    ASSERT_EQ(any.cast<fat_type>(), instance);
+    ASSERT_EQ(std::as_const(any).cast<fat_type>(), instance);
+    ASSERT_NE(any.data(), nullptr);
+    ASSERT_NE(std::as_const(any).data(), nullptr);
+    ASSERT_EQ(any, (meta::any{std::in_place_type<fat_type>, instance}));
+    ASSERT_EQ(any, meta::any{instance});
+    ASSERT_NE(any, meta::any{fat_type{}});
 }
 
 TEST_F(Meta, MetaAnyNoSBOCopyConstruction) {
@@ -389,16 +421,30 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
 
 TEST_F(Meta, MetaAnySBODestruction) {
     ASSERT_EQ(empty_type::counter, 0);
-    meta::any any{empty_type{}};
-    any = {};
+    { meta::any any{empty_type{}}; }
     ASSERT_EQ(empty_type::counter, 1);
 }
 
 TEST_F(Meta, MetaAnyNoSBODestruction) {
     ASSERT_EQ(fat_type::counter, 0);
-    meta::any any{fat_type{}};
-    any = {};
+    { meta::any any{fat_type{}}; }
     ASSERT_EQ(fat_type::counter, 1);
+}
+
+TEST_F(Meta, MetaAnyEmplace) {
+    meta::any any{};
+    any.emplace<int>(42);
+
+    ASSERT_TRUE(any);
+    ASSERT_FALSE(any.can_cast<void>());
+    ASSERT_TRUE(any.can_cast<int>());
+    ASSERT_EQ(any.cast<int>(), 42);
+    ASSERT_EQ(std::as_const(any).cast<int>(), 42);
+    ASSERT_NE(any.data(), nullptr);
+    ASSERT_NE(std::as_const(any).data(), nullptr);
+    ASSERT_EQ(any, (meta::any{std::in_place_type<int>, 42}));
+    ASSERT_EQ(any, meta::any{42});
+    ASSERT_NE(any, meta::any{3});
 }
 
 TEST_F(Meta, MetaAnySBOSwap) {

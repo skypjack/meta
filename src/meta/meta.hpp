@@ -313,15 +313,49 @@ class any final {
     using destroy_fn_type = void(*)(storage_type &);
 
     template<typename Type>
-    inline static auto compare(int, const Type &lhs, const Type &rhs)
-    -> decltype(lhs == rhs, bool{})
-    {
+    static auto compare(int, const Type &lhs, const Type &rhs)
+    -> decltype(lhs == rhs, bool{}) {
         return lhs == rhs;
     }
 
     template<typename Type>
-    inline static bool compare(char, const Type &lhs, const Type &rhs) {
+    static bool compare(char, const Type &lhs, const Type &rhs) {
         return &lhs == &rhs;
+    }
+
+    template<typename Type>
+    static bool compare(const void *lhs, const void *rhs) {
+        return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
+    }
+
+    template<typename Type>
+    static void * copy_storage(storage_type &storage, const void *instance) {
+        return new (&storage) Type{*static_cast<const Type *>(instance)};
+    }
+
+    template<typename Type>
+    static void * copy_object(storage_type &storage, const void *instance) {
+        using chunk_type = std::aligned_storage_t<sizeof(Type), alignof(Type)>;
+        auto *chunk = new chunk_type;
+        new (&storage) chunk_type *{chunk};
+        return new (chunk) Type{*static_cast<const Type *>(instance)};
+    }
+
+    template<typename Type>
+    static void destroy_storage(storage_type &storage) {
+        auto *node = internal::type_info<Type>::resolve();
+        auto *instance = reinterpret_cast<Type *>(&storage);
+        node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
+    }
+
+    template<typename Type>
+    static void destroy_object(storage_type &storage) {
+        using chunk_type = std::aligned_storage_t<sizeof(Type), alignof(Type)>;
+        auto *node = internal::type_info<Type>::resolve();
+        auto *chunk = *reinterpret_cast<chunk_type **>(&storage);
+        auto *instance = reinterpret_cast<Type *>(chunk);
+        node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
+        delete chunk;
     }
 
 public:
@@ -329,10 +363,50 @@ public:
     any() noexcept
         : storage{},
           instance{nullptr},
-          destroy{nullptr},
           node{nullptr},
-          comparator{nullptr}
+          destroy_fn{nullptr},
+          compare_fn{nullptr},
+          copy_fn{nullptr}
     {}
+
+    /**
+     * @brief Constructs a meta any by directly initializing the new object.
+     *
+     * This class uses a technique called small buffer optimization (SBO) to
+     * completely eliminate the need to allocate memory, where possible.<br/>
+     * From the user's point of view, nothing will change, but the elimination
+     * of allocations will reduce the jumps in memory and therefore will avoid
+     * chasing of pointers. This will greatly improve the use of the cache, thus
+     * increasing the overall performance.
+     *
+     * @tparam Type Type of object to use to initialize the container.
+     * @tparam Args Types of arguments to use to construct the new instance.
+     * @param args Parameters to use to construct the instance.
+     */
+    template<typename Type, typename... Args>
+    any(std::in_place_type_t<Type>, Args &&... args) {
+        using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
+        constexpr auto sbo_allowed = sizeof(actual_type) <= sizeof(void *);
+        node = internal::type_info<Type>::resolve();
+
+        compare_fn = &compare<actual_type>;
+
+        if constexpr(sbo_allowed) {
+            instance = new (&storage) actual_type{std::forward<Args>(args)...};
+            destroy_fn = &destroy_storage<actual_type>;
+            copy_fn = &copy_storage<actual_type>;
+        } else {
+            using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
+
+            auto chunk = std::make_unique<chunk_type>();
+            instance = new (chunk.get()) actual_type{std::forward<Args>(args)...};
+            new (&storage) chunk_type *{chunk.get()};
+            chunk.release();
+
+            destroy_fn = &destroy_object<actual_type>;
+            copy_fn = &copy_object<actual_type>;
+        }
+    }
 
     /**
      * @brief Constructs a meta any from a given value.
@@ -348,48 +422,9 @@ public:
      * @param type An instance of an object to use to initialize the container.
      */
     template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, any>>>
-    any(Type &&type) {
-        using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
-        node = internal::type_info<Type>::resolve();
-
-        comparator = [](const void *lhs, const void *rhs) {
-            return compare(0, *static_cast<const actual_type *>(lhs), *static_cast<const actual_type *>(rhs));
-        };
-
-        if constexpr(sizeof(actual_type) <= sizeof(void *)) {
-            new (&storage) actual_type{std::forward<Type>(type)};
-            instance = &storage;
-
-            copy = [](storage_type &storage, const void *instance) -> void * {
-                return new (&storage) actual_type{*static_cast<const actual_type *>(instance)};
-            };
-
-            destroy = [](storage_type &storage) {
-                auto *node = internal::type_info<Type>::resolve();
-                auto *instance = reinterpret_cast<actual_type *>(&storage);
-                node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
-            };
-        } else {
-            using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
-            auto *chunk = new chunk_type;
-            instance = new (chunk) actual_type{std::forward<Type>(type)};
-            new (&storage) chunk_type *{chunk};
-
-            copy = [](storage_type &storage, const void *instance) -> void * {
-                auto *chunk = new chunk_type;
-                new (&storage) chunk_type *{chunk};
-                return new (chunk) actual_type{*static_cast<const actual_type *>(instance)};
-            };
-
-            destroy = [](storage_type &storage) {
-                auto *node = internal::type_info<Type>::resolve();
-                auto *chunk = *reinterpret_cast<chunk_type **>(&storage);
-                auto *instance = reinterpret_cast<actual_type *>(chunk);
-                node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
-                delete chunk;
-            };
-        }
-    }
+    any(Type &&type)
+        : any{std::in_place_type<std::remove_cv_t<std::remove_reference_t<Type>>>, std::forward<Type>(type)}
+    {}
 
     /**
      * @brief Copy constructor.
@@ -399,11 +434,11 @@ public:
         : any{}
     {
         if(other) {
-            instance = other.copy(storage, other.instance);
-            destroy = other.destroy;
+            instance = other.copy_fn(storage, other.instance);
             node = other.node;
-            comparator = other.comparator;
-            copy = other.copy;
+            destroy_fn = other.destroy_fn;
+            compare_fn = other.compare_fn;
+            copy_fn = other.copy_fn;
         }
     }
 
@@ -424,8 +459,8 @@ public:
 
     /*! @brief Frees the internal storage, whatever it means. */
     ~any() {
-        if(destroy) {
-            destroy(storage);
+        if(destroy_fn) {
+            destroy_fn(storage);
         }
     }
 
@@ -570,11 +605,24 @@ public:
     }
 
     /**
+     * @brief Replaces the contained object by initializing a new instance
+     * directly.
+     * @tparam Type Type of object to use to initialize the container.
+     * @tparam Args Types of arguments to use to construct the new instance.
+     * @param args Parameters to use to construct the instance.
+     */
+    template<typename Type, typename... Args>
+    void emplace(Args&& ... args) {
+        [[maybe_unused]] any other{std::move(*this)};
+        *this = any{std::in_place_type_t<Type>{}, std::forward<Args>(args)...};
+    }
+
+    /**
      * @brief Returns false if a container is empty, true otherwise.
      * @return False if the container is empty, true otherwise.
      */
     inline explicit operator bool() const noexcept {
-        return destroy;
+        return destroy_fn;
     }
 
     /**
@@ -584,7 +632,7 @@ public:
      * otherwise.
      */
     inline bool operator==(const any &other) const noexcept {
-        return (!instance && !other.instance) || (instance && other.instance && node == other.node && comparator(instance, other.instance));
+        return (!instance && !other.instance) || (instance && other.instance && node == other.node && compare_fn(instance, other.instance));
     }
 
     /**
@@ -595,29 +643,37 @@ public:
     friend void swap(any &lhs, any &rhs) {
         using std::swap;
 
-        std::swap(lhs.storage, rhs.storage);
-        std::swap(lhs.instance, rhs.instance);
-        std::swap(lhs.destroy, rhs.destroy);
+        if(lhs && rhs) {
+            storage_type buffer;
+            void *tmp = lhs.copy_fn(buffer, lhs.instance);
+            lhs.destroy_fn(lhs.storage);
+            lhs.instance = rhs.copy_fn(lhs.storage, rhs.instance);
+            rhs.destroy_fn(rhs.storage);
+            rhs.instance = lhs.copy_fn(rhs.storage, tmp);
+            lhs.destroy_fn(buffer);
+        } else if(lhs) {
+            rhs.instance = lhs.copy_fn(rhs.storage, lhs.instance);
+            lhs.destroy_fn(lhs.storage);
+            lhs.instance = nullptr;
+        } else if(rhs) {
+            lhs.instance = rhs.copy_fn(lhs.storage, rhs.instance);
+            rhs.destroy_fn(rhs.storage);
+            rhs.instance = nullptr;
+        }
+
         std::swap(lhs.node, rhs.node);
-        std::swap(lhs.comparator, rhs.comparator);
-        std::swap(lhs.copy, rhs.copy);
-
-        if(lhs.instance == &rhs.storage) {
-            lhs.instance = &lhs.storage;
-        }
-
-        if(rhs.instance == &lhs.storage) {
-            rhs.instance = &rhs.storage;
-        }
+        std::swap(lhs.destroy_fn, rhs.destroy_fn);
+        std::swap(lhs.compare_fn, rhs.compare_fn);
+        std::swap(lhs.copy_fn, rhs.copy_fn);
     }
 
 private:
     storage_type storage;
     void *instance;
-    destroy_fn_type destroy;
     internal::type_node *node;
-    compare_fn_type comparator;
-    copy_fn_type copy;
+    destroy_fn_type destroy_fn;
+    compare_fn_type compare_fn;
+    copy_fn_type copy_fn;
 };
 
 
@@ -2097,7 +2153,6 @@ inline bool destroy([[maybe_unused]] handle handle) {
     return accepted;
 }
 
-
 template<typename Type, typename... Args, std::size_t... Indexes>
 inline any construct(any * const args, std::index_sequence<Indexes...>) {
     [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
@@ -2106,7 +2161,7 @@ inline any construct(any * const args, std::index_sequence<Indexes...>) {
 
     if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
         ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
-        any = Type{(args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...};
+        any.emplace<Type>((args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...);
     }
 
     return any;
