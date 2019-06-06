@@ -470,7 +470,7 @@ public:
      * @return This meta any object.
      */
     any & operator=(any other) {
-        swap(*this, other);
+        swap(other, *this);
         return *this;
     }
 
