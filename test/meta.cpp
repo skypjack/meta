@@ -48,7 +48,10 @@ struct base_type {
 
 struct derived_type: base_type {
     derived_type() = default;
-    derived_type(const base_type &, int i, char c): i{i}, c{c} {}
+
+    derived_type(const base_type &, int value, char character)
+        : i{value}, c{character}
+    {}
 
     const int i{};
     const char c{};
@@ -86,10 +89,10 @@ struct func_type {
 struct setter_getter_type {
     int value{};
 
-    int setter(int value) { return this->value = value; }
+    int setter(int val) { return value = val; }
     int getter() { return value; }
 
-    int setter_with_ref(const int &value) { return this->value = value; }
+    int setter_with_ref(const int &val) { return value = val; }
     const int & getter_with_ref() { return value; }
 
     static int static_setter(setter_getter_type *type, int value) { return type->value = value; }
@@ -290,7 +293,7 @@ TEST_F(Meta, MetaAnySBOCopyConstruction) {
 
 TEST_F(Meta, MetaAnySBOCopyAssignment) {
     meta::any any{42};
-    meta::any other{};
+    meta::any other{3};
 
     other = any;
 
@@ -320,7 +323,7 @@ TEST_F(Meta, MetaAnySBOMoveConstruction) {
 
 TEST_F(Meta, MetaAnySBOMoveAssignment) {
     meta::any any{42};
-    meta::any other{};
+    meta::any other{3};
 
     other = std::move(any);
 
@@ -371,7 +374,7 @@ TEST_F(Meta, MetaAnyNoSBOCopyAssignment) {
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
-    meta::any other{};
+    meta::any other{3};
 
     other = any;
 
@@ -405,7 +408,7 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
-    meta::any other{};
+    meta::any other{3};
 
     other = std::move(any);
 
@@ -482,6 +485,37 @@ TEST_F(Meta, MetaAnySBOWithNoSBOSwap) {
     ASSERT_TRUE(rhs.can_cast<fat_type>());
     ASSERT_EQ(rhs.cast<fat_type>().foo, &value);
     ASSERT_EQ(rhs.cast<fat_type>().bar, &value);
+}
+
+TEST_F(Meta, MetaAnySBOWithEmptySwap) {
+    meta::any lhs{'c'};
+    meta::any rhs{};
+
+    std::swap(lhs, rhs);
+
+    ASSERT_FALSE(lhs);
+    ASSERT_TRUE(rhs.can_cast<char>());
+    ASSERT_EQ(rhs.cast<char>(), 'c');
+
+    std::swap(lhs, rhs);
+
+    ASSERT_FALSE(rhs);
+    ASSERT_TRUE(lhs.can_cast<char>());
+    ASSERT_EQ(lhs.cast<char>(), 'c');
+}
+
+TEST_F(Meta, MetaAnyNoSBOWithEmptySwap) {
+    int i;
+    meta::any lhs{fat_type{&i}};
+    meta::any rhs{};
+
+    std::swap(lhs, rhs);
+
+    ASSERT_EQ(rhs.cast<fat_type>().bar, &i);
+
+    std::swap(lhs, rhs);
+
+    ASSERT_EQ(lhs.cast<fat_type>().bar, &i);
 }
 
 TEST_F(Meta, MetaAnyComparable) {
@@ -1426,13 +1460,11 @@ TEST_F(Meta, MetaTypeConstructMetaAnyArgs) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-
 TEST_F(Meta, MetaTypeConstructInvalidArgs) {
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(meta::any{base_type{}}, meta::any{'c'}, meta::any{42});
     ASSERT_FALSE(any);
 }
-
 
 TEST_F(Meta, MetaTypeLessArgs) {
     auto type = meta::resolve<derived_type>();
