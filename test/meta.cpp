@@ -1,3 +1,4 @@
+#include <utility>
 #include <type_traits>
 #include <gtest/gtest.h>
 #include <meta/factory.hpp>
@@ -420,6 +421,28 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
     ASSERT_EQ(std::as_const(other).cast<fat_type>(), instance);
     ASSERT_EQ(other, meta::any{instance});
     ASSERT_NE(other, fat_type{});
+}
+
+TEST_F(Meta, MetaAnySBOMoveInvalidate) {
+    meta::any any{42};
+    meta::any other{std::move(any)};
+    meta::any valid = std::move(other);
+
+    ASSERT_FALSE(any);
+    ASSERT_FALSE(other);
+    ASSERT_TRUE(valid);
+}
+
+TEST_F(Meta, MetaAnyNoSBOMoveInvalidate) {
+    int value = 42;
+    fat_type instance{&value};
+    meta::any any{instance};
+    meta::any other{std::move(any)};
+    meta::any valid = std::move(other);
+
+    ASSERT_FALSE(any);
+    ASSERT_FALSE(other);
+    ASSERT_TRUE(valid);
 }
 
 TEST_F(Meta, MetaAnySBODestruction) {
