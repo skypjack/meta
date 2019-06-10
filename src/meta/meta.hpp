@@ -357,7 +357,6 @@ class any final {
         auto *chunk = *reinterpret_cast<chunk_type **>(&from);
         new (&to) chunk_type *{chunk};
         chunk->~chunk_type();
-        new (&from) chunk_type *{nullptr};
         return instance;
     }
 
