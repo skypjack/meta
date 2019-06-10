@@ -61,7 +61,7 @@ class factory {
             nullptr,
             []() -> any { return std::get<0>(prop); },
             []() -> any { return std::get<1>(prop); },
-            []() -> meta::prop { return &node; }
+            []() noexcept -> meta::prop { return &node; }
         };
 
         prop = std::forward<Property>(property);
@@ -89,9 +89,9 @@ class factory {
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
             std::extent_v<Type>,
-            []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
+            []() noexcept -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &internal::destroy<Type>,
-            []() -> meta::type { return &node; }
+            []() noexcept -> meta::type { return &node; }
         };
 
         node.name = name;
@@ -201,8 +201,8 @@ public:
             type,
             nullptr,
             &internal::type_info<Base>::resolve,
-            [](void *instance) -> void * { return static_cast<Base *>(static_cast<Type *>(instance)); },
-            []() -> meta::base { return &node; }
+            [](void *instance) noexcept -> void * { return static_cast<Base *>(static_cast<Type *>(instance)); },
+            []() noexcept -> meta::base { return &node; }
         };
 
         node.next = type->base;
@@ -233,7 +233,7 @@ public:
             nullptr,
             &internal::type_info<To>::resolve,
             [](void *instance) -> any { return static_cast<To>(*static_cast<Type *>(instance)); },
-            []() -> meta::conv { return &node; }
+            []() noexcept -> meta::conv { return &node; }
         };
 
         node.next = type->conv;
@@ -272,7 +272,7 @@ public:
             helper_type::size,
             &helper_type::arg,
             [](any * const any) { return internal::invoke<Type, Func>(nullptr, any, std::make_index_sequence<helper_type::size>{}); },
-            []() -> meta::ctor { return &node; }
+            []() noexcept -> meta::ctor { return &node; }
         };
 
         node.next = type->ctor;
@@ -309,7 +309,7 @@ public:
             helper_type::size,
             &helper_type::arg,
             [](any * const any) { return internal::construct<Type, Args...>(any, std::make_index_sequence<helper_type::size>{}); },
-            []() -> meta::ctor { return &node; }
+            []() noexcept -> meta::ctor { return &node; }
         };
 
         node.next = type->ctor;
@@ -350,7 +350,7 @@ public:
                         ? ((*Func)(static_cast<Type *>(handle.data())), true)
                         : false;
             },
-            []() -> meta::dtor { return &node; }
+            []() noexcept -> meta::dtor { return &node; }
         };
 
         assert(!internal::type_info<Type>::type->dtor);
@@ -393,7 +393,7 @@ public:
                 &internal::type_info<Type>::resolve,
                 [](handle, any, any) { return false; },
                 [](handle, any) -> any { return Data; },
-                []() -> meta::data { return &node; }
+                []() noexcept -> meta::data { return &node; }
             };
 
             node.prop = properties<std::integral_constant<Type, Data>>(std::forward<Property>(property)...);
@@ -413,7 +413,7 @@ public:
                 &internal::type_info<data_type>::resolve,
                 &internal::setter<std::is_const_v<data_type>, Type, Data>,
                 &internal::getter<Type, Data>,
-                []() -> meta::data { return &node; }
+                []() noexcept -> meta::data { return &node; }
             };
 
             node.prop = properties<std::integral_constant<decltype(Data), Data>>(std::forward<Property>(property)...);
@@ -434,7 +434,7 @@ public:
                 &internal::type_info<data_type>::resolve,
                 &internal::setter<std::is_const_v<data_type>, Type, Data>,
                 &internal::getter<Type, Data>,
-                []() -> meta::data { return &node; }
+                []() noexcept -> meta::data { return &node; }
             };
 
             node.prop = properties<std::integral_constant<decltype(Data), Data>>(std::forward<Property>(property)...);
@@ -492,7 +492,7 @@ public:
             &internal::type_info<data_type>::resolve,
             &internal::setter<false, Type, Setter>,
             &internal::getter<Type, Getter>,
-            []() -> meta::data { return &node; }
+            []() noexcept -> meta::data { return &node; }
         };
 
         node.name = str;
@@ -541,7 +541,7 @@ public:
             &internal::type_info<typename func_type::return_type>::resolve,
             &func_type::arg,
             [](handle handle, any *any) { return internal::invoke<Type, Func>(handle, any, std::make_index_sequence<func_type::size>{}); },
-            []() -> meta::func { return &node; }
+            []() noexcept -> meta::func { return &node; }
         };
 
         node.name = str;

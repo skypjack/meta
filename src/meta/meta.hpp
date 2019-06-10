@@ -45,7 +45,7 @@ struct prop_node final {
     prop_node * next;
     any(* const key)();
     any(* const value)();
-    prop(* const clazz)();
+    prop(* const clazz)() noexcept;
 };
 
 
@@ -53,9 +53,9 @@ struct base_node final {
     base_node ** const underlying;
     type_node * const parent;
     base_node * next;
-    type_node *(* const ref)();
-    void *(* const cast)(void *);
-    base(* const clazz)();
+    type_node *(* const ref)() noexcept;
+    void *(* const cast)(void *) noexcept;
+    base(* const clazz)() noexcept;
 };
 
 
@@ -63,9 +63,9 @@ struct conv_node final {
     conv_node ** const underlying;
     type_node * const parent;
     conv_node * next;
-    type_node *(* const ref)();
+    type_node *(* const ref)() noexcept;
     any(* const convert)(void *);
-    conv(* const clazz)();
+    conv(* const clazz)() noexcept;
 };
 
 
@@ -76,9 +76,9 @@ struct ctor_node final {
     ctor_node * next;
     prop_node * prop;
     const size_type size;
-    type_node *(* const arg)(size_type);
+    type_node *(* const arg)(size_type) noexcept;
     any(* const invoke)(any * const);
-    ctor(* const clazz)();
+    ctor(* const clazz)() noexcept;
 };
 
 
@@ -86,7 +86,7 @@ struct dtor_node final {
     dtor_node ** const underlying;
     type_node * const parent;
     bool(* const invoke)(handle);
-    dtor(* const clazz)();
+    dtor(* const clazz)() noexcept;
 };
 
 
@@ -99,10 +99,10 @@ struct data_node final {
     prop_node * prop;
     const bool is_const;
     const bool is_static;
-    type_node *(* const ref)();
+    type_node *(* const ref)() noexcept;
     bool(* const set)(handle, any, any);
     any(* const get)(handle, any);
-    data(* const clazz)();
+    data(* const clazz)() noexcept;
 };
 
 
@@ -117,10 +117,10 @@ struct func_node final {
     const size_type size;
     const bool is_const;
     const bool is_static;
-    type_node *(* const ret)();
-    type_node *(* const arg)(size_type);
+    type_node *(* const ret)() noexcept;
+    type_node *(* const arg)(size_type) noexcept;
     any(* const invoke)(handle, any *);
-    func(* const clazz)();
+    func(* const clazz)() noexcept;
 };
 
 
@@ -142,9 +142,9 @@ struct type_node final {
     const bool is_member_object_pointer;
     const bool is_member_function_pointer;
     const size_type extent;
-    type(* const remove_pointer)();
+    type(* const remove_pointer)() noexcept;
     bool(* const destroy)(handle);
-    type(* const clazz)();
+    type(* const clazz)() noexcept;
     base_node *base{nullptr};
     conv_node *conv{nullptr};
     ctor_node *ctor{nullptr};
@@ -308,23 +308,24 @@ class any final {
     friend class handle;
 
     using storage_type = std::aligned_storage_t<sizeof(void *), alignof(void *)>;
-    using compare_fn_type = bool(*)(const void *, const void *);
-    using copy_fn_type = void *(*)(storage_type &, const void *);
-    using destroy_fn_type = void(*)(storage_type &);
+    using compare_fn_type = bool(const void *, const void *) noexcept;
+    using copy_fn_type = void *(storage_type &, const void *);
+    using destroy_fn_type = void(storage_type &);
+    using steal_fn_type = void *(storage_type &, storage_type &, destroy_fn_type *, void *) noexcept;
 
     template<typename Type>
-    static auto compare(int, const Type &lhs, const Type &rhs)
+    static auto compare(int, const Type &lhs, const Type &rhs) noexcept
     -> decltype(lhs == rhs, bool{}) {
         return lhs == rhs;
     }
 
     template<typename Type>
-    static bool compare(char, const Type &lhs, const Type &rhs) {
+    static bool compare(char, const Type &lhs, const Type &rhs) noexcept {
         return &lhs == &rhs;
     }
 
     template<typename Type>
-    static bool compare(const void *lhs, const void *rhs) {
+    static bool compare(const void *lhs, const void *rhs) noexcept {
         return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
     }
 
@@ -336,9 +337,28 @@ class any final {
     template<typename Type>
     static void * copy_object(storage_type &storage, const void *instance) {
         using chunk_type = std::aligned_storage_t<sizeof(Type), alignof(Type)>;
-        auto *chunk = new chunk_type;
-        new (&storage) chunk_type *{chunk};
-        return new (chunk) Type{*static_cast<const Type *>(instance)};
+        auto chunk = std::make_unique<chunk_type>();
+        new (&storage) chunk_type *{chunk.get()};
+        auto *other = new (chunk.get()) Type{*static_cast<const Type *>(instance)};
+        chunk.release();
+        return other;
+    }
+
+    template<typename Type>
+    static void * steal_storage(storage_type &to, storage_type &from, destroy_fn_type *destroy_fn, void *) noexcept {
+        void *instance = new (&to) Type{std::move(*reinterpret_cast<Type *>(&from))};
+        destroy_fn(from);
+        return instance;
+    }
+
+    template<typename Type>
+    static void * steal_object(storage_type &to, storage_type &from, destroy_fn_type *, void *instance) noexcept {
+        using chunk_type = std::aligned_storage_t<sizeof(Type), alignof(Type)>;
+        auto *chunk = *reinterpret_cast<chunk_type **>(&from);
+        new (&to) chunk_type *{chunk};
+        chunk->~chunk_type();
+        new (&from) chunk_type *{nullptr};
+        return instance;
     }
 
     template<typename Type>
@@ -366,7 +386,8 @@ public:
           node{nullptr},
           destroy_fn{nullptr},
           compare_fn{nullptr},
-          copy_fn{nullptr}
+          copy_fn{nullptr},
+          steal_fn{nullptr}
     {}
 
     /**
@@ -386,15 +407,17 @@ public:
     template<typename Type, typename... Args>
     any(std::in_place_type_t<Type>, Args &&... args) {
         using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
-        constexpr auto sbo_allowed = sizeof(actual_type) <= sizeof(void *);
         node = internal::type_info<Type>::resolve();
-
         compare_fn = &compare<actual_type>;
+
+        constexpr auto sbo_allowed = sizeof(actual_type) <= sizeof(void *)
+                && std::is_nothrow_move_constructible_v<actual_type>;
 
         if constexpr(sbo_allowed) {
             instance = new (&storage) actual_type{std::forward<Args>(args)...};
             destroy_fn = &destroy_storage<actual_type>;
             copy_fn = &copy_storage<actual_type>;
+            steal_fn = &steal_storage<actual_type>;
         } else {
             using chunk_type = std::aligned_storage_t<sizeof(actual_type), alignof(actual_type)>;
 
@@ -405,6 +428,7 @@ public:
 
             destroy_fn = &destroy_object<actual_type>;
             copy_fn = &copy_object<actual_type>;
+            steal_fn = &steal_object<actual_type>;
         }
     }
 
@@ -439,6 +463,7 @@ public:
             destroy_fn = other.destroy_fn;
             compare_fn = other.compare_fn;
             copy_fn = other.copy_fn;
+            steal_fn = other.steal_fn;
         }
     }
 
@@ -564,7 +589,7 @@ public:
      * one otherwise.
      */
     template<typename Type>
-    any convert() const noexcept {
+    any convert() const {
         const auto *type = internal::type_info<Type>::resolve();
         any any{};
 
@@ -589,7 +614,7 @@ public:
      * @return True if the conversion is possible, false otherwise.
      */
     template<typename Type>
-    bool convert() noexcept {
+    bool convert() {
         bool valid = (node == internal::type_info<Type>::resolve());
 
         if(!valid) {
@@ -622,7 +647,7 @@ public:
      * @return False if the container is empty, true otherwise.
      */
     explicit operator bool() const noexcept {
-        return destroy_fn;
+        return instance;
     }
 
     /**
@@ -640,24 +665,19 @@ public:
      * @param lhs A valid meta any object.
      * @param rhs A valid meta any object.
      */
-    friend void swap(any &lhs, any &rhs) {
+    friend void swap(any &lhs, any &rhs) noexcept {
         using std::swap;
 
         if(lhs && rhs) {
             storage_type buffer;
-            void *tmp = lhs.copy_fn(buffer, lhs.instance);
-            lhs.destroy_fn(lhs.storage);
-            lhs.instance = rhs.copy_fn(lhs.storage, rhs.instance);
-            rhs.destroy_fn(rhs.storage);
-            rhs.instance = lhs.copy_fn(rhs.storage, tmp);
-            lhs.destroy_fn(buffer);
+            void *instance = lhs.steal_fn(buffer, lhs.storage, lhs.destroy_fn, lhs.instance);
+            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn, rhs.instance);
+            rhs.instance = lhs.steal_fn(rhs.storage, buffer, lhs.destroy_fn, instance);
         } else if(lhs) {
-            rhs.instance = lhs.copy_fn(rhs.storage, lhs.instance);
-            lhs.destroy_fn(lhs.storage);
+            rhs.instance = lhs.steal_fn(rhs.storage, lhs.storage, lhs.destroy_fn, lhs.instance);
             lhs.instance = nullptr;
         } else if(rhs) {
-            lhs.instance = rhs.copy_fn(lhs.storage, rhs.instance);
-            rhs.destroy_fn(rhs.storage);
+            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn, rhs.instance);
             rhs.instance = nullptr;
         }
 
@@ -665,15 +685,17 @@ public:
         std::swap(lhs.destroy_fn, rhs.destroy_fn);
         std::swap(lhs.compare_fn, rhs.compare_fn);
         std::swap(lhs.copy_fn, rhs.copy_fn);
+        std::swap(lhs.steal_fn, rhs.steal_fn);
     }
 
 private:
     storage_type storage;
     void *instance;
     internal::type_node *node;
-    destroy_fn_type destroy_fn;
-    compare_fn_type compare_fn;
-    copy_fn_type copy_fn;
+    destroy_fn_type *destroy_fn;
+    compare_fn_type *compare_fn;
+    copy_fn_type *copy_fn;
+    steal_fn_type *steal_fn;
 };
 
 
@@ -2105,7 +2127,7 @@ struct function_helper<Ret(Args...)> {
 
     static constexpr auto size = sizeof...(Args);
 
-    static auto arg(typename internal::func_node::size_type index) {
+    static auto arg(typename internal::func_node::size_type index) noexcept {
         return std::array<type_node *, sizeof...(Args)>{{type_info<Args>::resolve()...}}[index];
     }
 };
@@ -2317,9 +2339,9 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
             std::extent_v<Type>,
-            []() -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
+            []() noexcept -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
             &destroy<Type>,
-            []() -> meta::type { return &node; }
+            []() noexcept -> meta::type { return &node; }
         };
 
         type = &node;
