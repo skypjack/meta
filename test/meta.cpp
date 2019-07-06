@@ -423,6 +423,61 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
     ASSERT_NE(other, fat_type{});
 }
 
+TEST_F(Meta, MetaAnyVoidInPlaceConstruction) {
+    meta::any any{std::in_place_type<void>};
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<void>());
+    ASSERT_FALSE(any.can_cast<char>());
+    ASSERT_EQ(any.data(), nullptr);
+    ASSERT_EQ(std::as_const(any).data(), nullptr);
+    ASSERT_EQ(any, meta::any{std::in_place_type<void>});
+}
+
+TEST_F(Meta, MetaAnyVoidCopyConstruction) {
+    meta::any any{std::in_place_type<void>};
+    meta::any other{any};
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(other);
+    ASSERT_TRUE(other.can_cast<void>());
+    ASSERT_EQ(other, meta::any{std::in_place_type<void>});
+}
+
+TEST_F(Meta, MetaAnyVoidCopyAssignment) {
+    meta::any any{std::in_place_type<void>};
+    meta::any other{std::in_place_type<void>};
+
+    other = any;
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(other);
+    ASSERT_TRUE(other.can_cast<void>());
+    ASSERT_EQ(other, meta::any{std::in_place_type<void>});
+}
+
+TEST_F(Meta, MetaAnyVoidMoveConstruction) {
+    meta::any any{std::in_place_type<void>};
+    meta::any other{std::move(any)};
+
+    ASSERT_FALSE(any);
+    ASSERT_TRUE(other);
+    ASSERT_TRUE(other.can_cast<void>());
+    ASSERT_EQ(other, meta::any{std::in_place_type<void>});
+}
+
+TEST_F(Meta, MetaAnyVoidMoveAssignment) {
+    meta::any any{std::in_place_type<void>};
+    meta::any other{std::in_place_type<void>};
+
+    other = std::move(any);
+
+    ASSERT_FALSE(any);
+    ASSERT_TRUE(other);
+    ASSERT_TRUE(other.can_cast<void>());
+    ASSERT_EQ(other, meta::any{std::in_place_type<void>});
+}
+
 TEST_F(Meta, MetaAnySBOMoveInvalidate) {
     meta::any any{42};
     meta::any other{std::move(any)};
@@ -445,6 +500,16 @@ TEST_F(Meta, MetaAnyNoSBOMoveInvalidate) {
     ASSERT_TRUE(valid);
 }
 
+TEST_F(Meta, MetaAnyVoidMoveInvalidate) {
+    meta::any any{std::in_place_type<void>};
+    meta::any other{std::move(any)};
+    meta::any valid = std::move(other);
+
+    ASSERT_FALSE(any);
+    ASSERT_FALSE(other);
+    ASSERT_TRUE(valid);
+}
+
 TEST_F(Meta, MetaAnySBODestruction) {
     ASSERT_EQ(empty_type::counter, 0);
     { meta::any any{empty_type{}}; }
@@ -455,6 +520,11 @@ TEST_F(Meta, MetaAnyNoSBODestruction) {
     ASSERT_EQ(fat_type::counter, 0);
     { meta::any any{fat_type{}}; }
     ASSERT_EQ(fat_type::counter, 1);
+}
+
+TEST_F(Meta, MetaAnyVoidDestruction) {
+    // just let asan tell us if everything is ok here
+    [[maybe_unused]] meta::any any{std::in_place_type<void>};
 }
 
 TEST_F(Meta, MetaAnyEmplace) {
@@ -471,6 +541,17 @@ TEST_F(Meta, MetaAnyEmplace) {
     ASSERT_EQ(any, (meta::any{std::in_place_type<int>, 42}));
     ASSERT_EQ(any, meta::any{42});
     ASSERT_NE(any, meta::any{3});
+}
+
+TEST_F(Meta, MetaAnyEmplaceVoid) {
+    meta::any any{};
+    any.emplace<void>();
+
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<void>());
+    ASSERT_EQ(any.data(), nullptr);
+    ASSERT_EQ(std::as_const(any).data(), nullptr);
+    ASSERT_EQ(any, (meta::any{std::in_place_type<void>}));
 }
 
 TEST_F(Meta, MetaAnySBOSwap) {
@@ -494,6 +575,16 @@ TEST_F(Meta, MetaAnyNoSBOSwap) {
 
     ASSERT_EQ(lhs.cast<fat_type>().foo, &j);
     ASSERT_EQ(rhs.cast<fat_type>().bar, &i);
+}
+
+TEST_F(Meta, MetaAnyVoidSwap) {
+    meta::any lhs{std::in_place_type<void>};
+    meta::any rhs{std::in_place_type<void>};
+    const auto *pre = lhs.data();
+
+    std::swap(lhs, rhs);
+
+    ASSERT_EQ(pre, lhs.data());
 }
 
 TEST_F(Meta, MetaAnySBOWithNoSBOSwap) {
@@ -527,10 +618,35 @@ TEST_F(Meta, MetaAnySBOWithEmptySwap) {
     ASSERT_EQ(lhs.cast<char>(), 'c');
 }
 
+TEST_F(Meta, MetaAnySBOWithVoidSwap) {
+    meta::any lhs{'c'};
+    meta::any rhs{std::in_place_type<void>};
+
+    std::swap(lhs, rhs);
+
+    ASSERT_TRUE(lhs.can_cast<void>());
+    ASSERT_TRUE(rhs.can_cast<char>());
+    ASSERT_EQ(rhs.cast<char>(), 'c');
+}
+
 TEST_F(Meta, MetaAnyNoSBOWithEmptySwap) {
     int i;
     meta::any lhs{fat_type{&i}};
     meta::any rhs{};
+
+    std::swap(lhs, rhs);
+
+    ASSERT_EQ(rhs.cast<fat_type>().bar, &i);
+
+    std::swap(lhs, rhs);
+
+    ASSERT_EQ(lhs.cast<fat_type>().bar, &i);
+}
+
+TEST_F(Meta, MetaAnyNoSBOWithVoidSwap) {
+    int i;
+    meta::any lhs{fat_type{&i}};
+    meta::any rhs{std::in_place_type<void>};
 
     std::swap(lhs, rhs);
 
@@ -565,6 +681,21 @@ TEST_F(Meta, MetaAnyNotComparable) {
 
     ASSERT_TRUE(any == any);
     ASSERT_FALSE(any == meta::any{not_comparable_type{}});
+    ASSERT_TRUE(any != meta::any{});
+}
+
+TEST_F(Meta, MetaAnyCompareVoid) {
+    meta::any any{std::in_place_type<void>};
+
+    ASSERT_EQ(any, any);
+    ASSERT_EQ(any, meta::any{std::in_place_type<void>});
+    ASSERT_NE(any, meta::any{'a'});
+    ASSERT_NE(any, meta::any{});
+
+    ASSERT_TRUE(any == any);
+    ASSERT_TRUE(any == meta::any{std::in_place_type<void>});
+    ASSERT_FALSE(any == meta::any{'a'});
+    ASSERT_TRUE(any != meta::any{'a'});
     ASSERT_TRUE(any != meta::any{});
 }
 
@@ -1240,7 +1371,8 @@ TEST_F(Meta, MetaFuncRetVoid) {
 
     auto any = func.invoke(instance, 5);
 
-    ASSERT_FALSE(any);
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<void>());
     ASSERT_EQ(func_type::value, 25);
 
     func.prop([](auto prop) {
@@ -1309,7 +1441,8 @@ TEST_F(Meta, MetaFuncStaticRetVoid) {
 
     auto any = func.invoke({}, 42);
 
-    ASSERT_FALSE(any);
+    ASSERT_TRUE(any);
+    ASSERT_TRUE(any.can_cast<void>());
     ASSERT_EQ(func_type::value, 42);
 
     func.prop([](auto *prop) {
