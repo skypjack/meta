@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['handle',['handle',['../classmeta_1_1handle.html',1,'meta']]]
+  ['handle',['handle',['../structmeta_1_1handle.html',1,'meta']]]
 ];

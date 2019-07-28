@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.4.4</span>
+   &#160;<span id="projectnumber">1.4.5</span>
    </div>
   </td>
  </tr>
@@ -150,8 +150,10 @@ Any as in any type</h2>
 <p>A meta any object provides an API similar to that of its most famous counterpart and serves the same purpose of being an opaque container for any type of value.<br />
  It minimizes the allocations required, which are almost absent thanks to <em>SBO</em> techniques. In fact, unless users deal with <em>fat types</em> and create instances of them though the reflection system, allocations are at zero.</p>
 <p>A meta any object can be created by any other object or as an empty container to initialize later:</p>
-<div class="fragment"><div class="line"><span class="comment">// a meta any object that contains an int</span></div><div class="line"><a class="code" href="classmeta_1_1any.html">meta::any</a> any{0};</div><div class="line"></div><div class="line"><span class="comment">// an empty meta any object</span></div><div class="line"><a class="code" href="classmeta_1_1any.html">meta::any</a> empty{};</div></div><!-- fragment --><p>It can be constructed or assigned by copy and move and it takes the burden of destroying the contained object when required.<br />
- A meta any object has a <code>type</code> member function that returns the meta type of the contained value, if any. The member functions <code>can_cast</code> and <code>can_convert</code> are used to know if the underlying object has a given type as a base or if it can be converted implicitly to it. Similarly, <code>cast</code> and <code>convert</code> do what they promise and return the expected value.</p>
+<div class="fragment"><div class="line"><span class="comment">// a meta any object that contains an int</span></div><div class="line"><a class="code" href="classmeta_1_1any.html">meta::any</a> any{0};</div><div class="line"></div><div class="line"><span class="comment">// an empty meta any object</span></div><div class="line"><a class="code" href="classmeta_1_1any.html">meta::any</a> empty{};</div></div><!-- fragment --><p>It takes the burden of destroying the contained instance when required.<br />
+ Moreover, it can be used as an opaque container for unmanaged objects if needed:</p>
+<div class="fragment"><div class="line"><span class="keywordtype">int</span> value;</div><div class="line"><a class="code" href="classmeta_1_1any.html">meta::any</a> any{std::in_place, value};</div></div><!-- fragment --><p>In this case, the contained instance is never destroyed and users must ensure that the lifetime of the object exceeds that of the container.</p>
+<p>A meta any object has a <code>type</code> member function that returns the meta type of the contained value, if any. The member functions <code>try_cast</code>, <code>cast</code> and <code>convert</code> are used to know if the underlying object has a given type as a base or if it can be converted implicitly to it.</p>
 <h2><a class="anchor" id="autotoc_md11"></a>
 Enjoy the runtime</h2>
 <p>Once the web of reflected types has been constructed, it's a matter of using it at runtime where required.</p>

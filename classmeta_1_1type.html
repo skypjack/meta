@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.4.4</span>
+   &#160;<span id="projectnumber">1.4.5</span>
    </div>
   </td>
  </tr>
@@ -69,7 +69,7 @@ $(function() {
 <a href="#friends">Friends</a> &#124;
 <a href="classmeta_1_1type-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">meta::type Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
+<div class="title">meta::type Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -133,13 +133,13 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a20b33595b2cab7370b177a146cae2421"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1type.html">meta::type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a20b33595b2cab7370b177a146cae2421">remove_pointer</a> () const noexcept</td></tr>
 <tr class="memdesc:a20b33595b2cab7370b177a146cae2421"><td class="mdescLeft">&#160;</td><td class="mdescRight">Provides the meta type for which the pointer is defined.  <a href="#a20b33595b2cab7370b177a146cae2421">More...</a><br /></td></tr>
 <tr class="separator:a20b33595b2cab7370b177a146cae2421"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61767606a75555ed1a2bf11b7e66416b"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
-<tr class="memitem:a61767606a75555ed1a2bf11b7e66416b"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a61767606a75555ed1a2bf11b7e66416b">base</a> (Op op) const noexcept</td></tr>
-<tr class="memdesc:a61767606a75555ed1a2bf11b7e66416b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta base of a meta type.  <a href="#a61767606a75555ed1a2bf11b7e66416b">More...</a><br /></td></tr>
-<tr class="separator:a61767606a75555ed1a2bf11b7e66416b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a88d11c14bcd173bdba1cfbe703805fbd"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1base.html">meta::base</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a88d11c14bcd173bdba1cfbe703805fbd">base</a> (const char *str) const noexcept</td></tr>
-<tr class="memdesc:a88d11c14bcd173bdba1cfbe703805fbd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta base associated with a given name.  <a href="#a88d11c14bcd173bdba1cfbe703805fbd">More...</a><br /></td></tr>
-<tr class="separator:a88d11c14bcd173bdba1cfbe703805fbd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd697bfb6d96d08ff46cd42cc2a3652f"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
+<tr class="memitem:acd697bfb6d96d08ff46cd42cc2a3652f"><td class="memTemplItemLeft" align="right" valign="top">std::enable_if_t&lt; std::is_invocable_v&lt; Op, <a class="el" href="classmeta_1_1base.html">meta::base</a> &gt;, void &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#acd697bfb6d96d08ff46cd42cc2a3652f">base</a> (Op op) const noexcept</td></tr>
+<tr class="memdesc:acd697bfb6d96d08ff46cd42cc2a3652f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta base of a meta type.  <a href="#acd697bfb6d96d08ff46cd42cc2a3652f">More...</a><br /></td></tr>
+<tr class="separator:acd697bfb6d96d08ff46cd42cc2a3652f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aff5a120e3be7e161503cb1ec6dcbb360"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1base.html">meta::base</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#aff5a120e3be7e161503cb1ec6dcbb360">base</a> (const char *<a class="el" href="classmeta_1_1type.html#a1417898cc3911d269fcf5320cf24d146">name</a>) const noexcept</td></tr>
+<tr class="memdesc:aff5a120e3be7e161503cb1ec6dcbb360"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta base associated with a given identifier.  <a href="#aff5a120e3be7e161503cb1ec6dcbb360">More...</a><br /></td></tr>
+<tr class="separator:aff5a120e3be7e161503cb1ec6dcbb360"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40ae38f491a517b8e87b4411af74c545"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
 <tr class="memitem:a40ae38f491a517b8e87b4411af74c545"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a40ae38f491a517b8e87b4411af74c545">conv</a> (Op op) const noexcept</td></tr>
 <tr class="memdesc:a40ae38f491a517b8e87b4411af74c545"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta conversion functions of a meta type.  <a href="#a40ae38f491a517b8e87b4411af74c545">More...</a><br /></td></tr>
@@ -159,25 +159,25 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a01fefcd2e9cbd8c26b76033ffa2b722b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1dtor.html">meta::dtor</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a01fefcd2e9cbd8c26b76033ffa2b722b">dtor</a> () const noexcept</td></tr>
 <tr class="memdesc:a01fefcd2e9cbd8c26b76033ffa2b722b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta destructor associated with a given type.  <a href="#a01fefcd2e9cbd8c26b76033ffa2b722b">More...</a><br /></td></tr>
 <tr class="separator:a01fefcd2e9cbd8c26b76033ffa2b722b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00cfc92d75c8e1e6de407a0391e294db"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
-<tr class="memitem:a00cfc92d75c8e1e6de407a0391e294db"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a00cfc92d75c8e1e6de407a0391e294db">data</a> (Op op) const noexcept</td></tr>
-<tr class="memdesc:a00cfc92d75c8e1e6de407a0391e294db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta data of a meta type.  <a href="#a00cfc92d75c8e1e6de407a0391e294db">More...</a><br /></td></tr>
-<tr class="separator:a00cfc92d75c8e1e6de407a0391e294db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a97a2ba87222beb550c00af6152610f53"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1data.html">meta::data</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a97a2ba87222beb550c00af6152610f53">data</a> (const char *str) const noexcept</td></tr>
-<tr class="memdesc:a97a2ba87222beb550c00af6152610f53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta data associated with a given name.  <a href="#a97a2ba87222beb550c00af6152610f53">More...</a><br /></td></tr>
-<tr class="separator:a97a2ba87222beb550c00af6152610f53"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a75073faefb2dba9ccb2e680d1ebc64ec"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
-<tr class="memitem:a75073faefb2dba9ccb2e680d1ebc64ec"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a75073faefb2dba9ccb2e680d1ebc64ec">func</a> (Op op) const noexcept</td></tr>
-<tr class="memdesc:a75073faefb2dba9ccb2e680d1ebc64ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta functions of a meta type.  <a href="#a75073faefb2dba9ccb2e680d1ebc64ec">More...</a><br /></td></tr>
-<tr class="separator:a75073faefb2dba9ccb2e680d1ebc64ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c3ad87be4eed4a5e33b741f9c5c7d3c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1func.html">meta::func</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a4c3ad87be4eed4a5e33b741f9c5c7d3c">func</a> (const char *str) const noexcept</td></tr>
-<tr class="memdesc:a4c3ad87be4eed4a5e33b741f9c5c7d3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta function associated with a given name.  <a href="#a4c3ad87be4eed4a5e33b741f9c5c7d3c">More...</a><br /></td></tr>
-<tr class="separator:a4c3ad87be4eed4a5e33b741f9c5c7d3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a746349eb9819b6367946a61839a893e2"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
+<tr class="memitem:a746349eb9819b6367946a61839a893e2"><td class="memTemplItemLeft" align="right" valign="top">std::enable_if_t&lt; std::is_invocable_v&lt; Op, <a class="el" href="classmeta_1_1data.html">meta::data</a> &gt;, void &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a746349eb9819b6367946a61839a893e2">data</a> (Op op) const noexcept</td></tr>
+<tr class="memdesc:a746349eb9819b6367946a61839a893e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta data of a meta type.  <a href="#a746349eb9819b6367946a61839a893e2">More...</a><br /></td></tr>
+<tr class="separator:a746349eb9819b6367946a61839a893e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5593edcfbb0ae6f17ee253e81b58806"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1data.html">meta::data</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#ac5593edcfbb0ae6f17ee253e81b58806">data</a> (const char *<a class="el" href="classmeta_1_1type.html#a1417898cc3911d269fcf5320cf24d146">name</a>) const noexcept</td></tr>
+<tr class="memdesc:ac5593edcfbb0ae6f17ee253e81b58806"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta data associated with a given identifier.  <a href="#ac5593edcfbb0ae6f17ee253e81b58806">More...</a><br /></td></tr>
+<tr class="separator:ac5593edcfbb0ae6f17ee253e81b58806"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2517bfd1952983f5f9213c5944842c15"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
+<tr class="memitem:a2517bfd1952983f5f9213c5944842c15"><td class="memTemplItemLeft" align="right" valign="top">std::enable_if_t&lt; std::is_invocable_v&lt; Op, <a class="el" href="classmeta_1_1func.html">meta::func</a> &gt;, void &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a2517bfd1952983f5f9213c5944842c15">func</a> (Op op) const noexcept</td></tr>
+<tr class="memdesc:a2517bfd1952983f5f9213c5944842c15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Iterates all the meta functions of a meta type.  <a href="#a2517bfd1952983f5f9213c5944842c15">More...</a><br /></td></tr>
+<tr class="separator:a2517bfd1952983f5f9213c5944842c15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4978dbb16084322a00711e4faf1f2b98"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1func.html">meta::func</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a4978dbb16084322a00711e4faf1f2b98">func</a> (const char *<a class="el" href="classmeta_1_1type.html#a1417898cc3911d269fcf5320cf24d146">name</a>) const noexcept</td></tr>
+<tr class="memdesc:a4978dbb16084322a00711e4faf1f2b98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta function associated with a given identifier.  <a href="#a4978dbb16084322a00711e4faf1f2b98">More...</a><br /></td></tr>
+<tr class="separator:a4978dbb16084322a00711e4faf1f2b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9cff1aaa4e461cea309468eb029a157a"><td class="memTemplParams" colspan="2">template&lt;typename... Args&gt; </td></tr>
 <tr class="memitem:a9cff1aaa4e461cea309468eb029a157a"><td class="memTemplItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1any.html">any</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#a9cff1aaa4e461cea309468eb029a157a">construct</a> (Args &amp;&amp;... args) const</td></tr>
 <tr class="memdesc:a9cff1aaa4e461cea309468eb029a157a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Creates an instance of the underlying type, if possible.  <a href="#a9cff1aaa4e461cea309468eb029a157a">More...</a><br /></td></tr>
 <tr class="separator:a9cff1aaa4e461cea309468eb029a157a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acb3a4eb75e37e969d226713011a45909"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#acb3a4eb75e37e969d226713011a45909">destroy</a> (<a class="el" href="classmeta_1_1handle.html">handle</a> <a class="el" href="classmeta_1_1handle.html">handle</a>) const</td></tr>
+<tr class="memitem:acb3a4eb75e37e969d226713011a45909"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#acb3a4eb75e37e969d226713011a45909">destroy</a> (<a class="el" href="structmeta_1_1handle.html">handle</a> <a class="el" href="structmeta_1_1handle.html">handle</a>) const</td></tr>
 <tr class="memdesc:acb3a4eb75e37e969d226713011a45909"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroys an instance of the underlying type.  <a href="#acb3a4eb75e37e969d226713011a45909">More...</a><br /></td></tr>
 <tr class="separator:acb3a4eb75e37e969d226713011a45909"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a01013e4be80c7cd65f2f88cf49fb2fea"><td class="memTemplParams" colspan="2">template&lt;typename Op &gt; </td></tr>
@@ -197,11 +197,6 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="friends"></a>
 Friends</h2></td></tr>
-<tr class="memitem:af77f80d14db803c3c06947ba5204a0ca"><td class="memTemplParams" colspan="2"><a id="af77f80d14db803c3c06947ba5204a0ca"></a>
-template&lt;typename &gt; </td></tr>
-<tr class="memitem:af77f80d14db803c3c06947ba5204a0ca"><td class="memTemplItemLeft" align="right" valign="top">class&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#af77f80d14db803c3c06947ba5204a0ca">factory</a></td></tr>
-<tr class="memdesc:af77f80d14db803c3c06947ba5204a0ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">A meta factory is allowed to create meta objects. <br /></td></tr>
-<tr class="separator:af77f80d14db803c3c06947ba5204a0ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af06ab170c059daca813bf08c6ff1fad4"><td class="memTemplParams" colspan="2"><a id="af06ab170c059daca813bf08c6ff1fad4"></a>
 template&lt;typename... &gt; </td></tr>
 <tr class="memitem:af06ab170c059daca813bf08c6ff1fad4"><td class="memTemplItemLeft" align="right" valign="top">struct&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classmeta_1_1type.html#af06ab170c059daca813bf08c6ff1fad4">internal::info_node</a></td></tr>
@@ -212,10 +207,10 @@ template&lt;typename... &gt; </td></tr>
 <div class="textblock"><p>Meta type object. </p>
 <p>A meta type is the starting point for accessing a reflected type, thus being able to work through it on real objects. </p>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01631">1631</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01571">1571</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a61767606a75555ed1a2bf11b7e66416b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a61767606a75555ed1a2bf11b7e66416b">&#9670;&nbsp;</a></span>base() <span class="overload">[1/2]</span></h2>
+<a id="acd697bfb6d96d08ff46cd42cc2a3652f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd697bfb6d96d08ff46cd42cc2a3652f">&#9670;&nbsp;</a></span>base() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -226,7 +221,7 @@ template&lt;typename Op &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void meta::type::base </td>
+          <td class="memname">std::enable_if_t&lt;std::is_invocable_v&lt;Op, <a class="el" href="classmeta_1_1base.html">meta::base</a>&gt;, void&gt; meta::type::base </td>
           <td>(</td>
           <td class="paramtype">Op&#160;</td>
           <td class="paramname"><em>op</em></td><td>)</td>
@@ -255,12 +250,12 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01784">1784</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01722">1722</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a88d11c14bcd173bdba1cfbe703805fbd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a88d11c14bcd173bdba1cfbe703805fbd">&#9670;&nbsp;</a></span>base() <span class="overload">[2/2]</span></h2>
+<a id="aff5a120e3be7e161503cb1ec6dcbb360"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aff5a120e3be7e161503cb1ec6dcbb360">&#9670;&nbsp;</a></span>base() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -272,7 +267,7 @@ template&lt;typename Op &gt; </div>
           <td class="memname"><a class="el" href="classmeta_1_1base.html">meta::base</a> meta::type::base </td>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em></td><td>)</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -283,17 +278,17 @@ template&lt;typename Op &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the meta base associated with a given name. </p>
+<p>Returns the meta base associated with a given identifier. </p>
 <p>Searches recursively among <b>all</b> the base classes of the given type.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">str</td><td>The name to use to search for a meta base. </td></tr>
+    <tr><td class="paramname">name</td><td>Unique identifier. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The meta base associated with the given name, if any. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The meta base associated with the given identifier, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01798">1798</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01736">1736</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -339,7 +334,7 @@ template&lt;typename... Args&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta any containing the new instance, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01953">1953</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01893">1893</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -384,7 +379,7 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01816">1816</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01754">1754</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -423,7 +418,7 @@ template&lt;typename Type &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The meta conversion function associated with the given type, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01833">1833</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01771">1771</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -467,7 +462,7 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01847">1847</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01785">1785</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -499,12 +494,12 @@ template&lt;typename... Args&gt; </div>
 <p>Returns the meta constructor that accepts a given list of types of arguments. </p>
 <dl class="section return"><dt>Returns</dt><dd>The requested meta constructor, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01859">1859</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01797">1797</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a00cfc92d75c8e1e6de407a0391e294db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00cfc92d75c8e1e6de407a0391e294db">&#9670;&nbsp;</a></span>data() <span class="overload">[1/2]</span></h2>
+<a id="a746349eb9819b6367946a61839a893e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a746349eb9819b6367946a61839a893e2">&#9670;&nbsp;</a></span>data() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -515,7 +510,7 @@ template&lt;typename Op &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void meta::type::data </td>
+          <td class="memname">std::enable_if_t&lt;std::is_invocable_v&lt;Op, <a class="el" href="classmeta_1_1data.html">meta::data</a>&gt;, void&gt; meta::type::data </td>
           <td>(</td>
           <td class="paramtype">Op&#160;</td>
           <td class="paramname"><em>op</em></td><td>)</td>
@@ -544,12 +539,12 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01882">1882</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01821">1821</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a97a2ba87222beb550c00af6152610f53"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a97a2ba87222beb550c00af6152610f53">&#9670;&nbsp;</a></span>data() <span class="overload">[2/2]</span></h2>
+<a id="ac5593edcfbb0ae6f17ee253e81b58806"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac5593edcfbb0ae6f17ee253e81b58806">&#9670;&nbsp;</a></span>data() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -561,7 +556,7 @@ template&lt;typename Op &gt; </div>
           <td class="memname"><a class="el" href="classmeta_1_1data.html">meta::data</a> meta::type::data </td>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em></td><td>)</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -572,17 +567,17 @@ template&lt;typename Op &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the meta data associated with a given name. </p>
+<p>Returns the meta data associated with a given identifier. </p>
 <p>Searches recursively among <b>all</b> the meta data of the given type. This means that the meta data of the base classes will also be inspected, if any.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">str</td><td>The name to use to search for a meta data. </td></tr>
+    <tr><td class="paramname">name</td><td>Unique identifier. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The meta data associated with the given name, if any. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The meta data associated with the given identifier, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01898">1898</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01837">1837</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -598,7 +593,7 @@ template&lt;typename Op &gt; </div>
         <tr>
           <td class="memname">bool meta::type::destroy </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classmeta_1_1handle.html">handle</a>&#160;</td>
+          <td class="paramtype"><a class="el" href="structmeta_1_1handle.html">handle</a>&#160;</td>
           <td class="paramname"><em>handle</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -620,7 +615,7 @@ template&lt;typename Op &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True in case of success, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01977">1977</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01917">1917</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -650,7 +645,7 @@ template&lt;typename Op &gt; </div>
 <p>Returns the meta destructor associated with a given type. </p>
 <dl class="section return"><dt>Returns</dt><dd>The meta destructor associated with the given type, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01868">1868</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01806">1806</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -680,12 +675,12 @@ template&lt;typename Op &gt; </div>
 <p>If a given meta type refers to an array type, provides the number of elements of the array. </p>
 <dl class="section return"><dt>Returns</dt><dd>The number of elements of the array if the underlying type is an array type, 0 otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01762">1762</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01699">1699</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a75073faefb2dba9ccb2e680d1ebc64ec"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a75073faefb2dba9ccb2e680d1ebc64ec">&#9670;&nbsp;</a></span>func() <span class="overload">[1/2]</span></h2>
+<a id="a2517bfd1952983f5f9213c5944842c15"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2517bfd1952983f5f9213c5944842c15">&#9670;&nbsp;</a></span>func() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -696,7 +691,7 @@ template&lt;typename Op &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void meta::type::func </td>
+          <td class="memname">std::enable_if_t&lt;std::is_invocable_v&lt;Op, <a class="el" href="classmeta_1_1func.html">meta::func</a>&gt;, void&gt; meta::type::func </td>
           <td>(</td>
           <td class="paramtype">Op&#160;</td>
           <td class="paramname"><em>op</em></td><td>)</td>
@@ -725,12 +720,12 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01917">1917</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01857">1857</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
-<a id="a4c3ad87be4eed4a5e33b741f9c5c7d3c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c3ad87be4eed4a5e33b741f9c5c7d3c">&#9670;&nbsp;</a></span>func() <span class="overload">[2/2]</span></h2>
+<a id="a4978dbb16084322a00711e4faf1f2b98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4978dbb16084322a00711e4faf1f2b98">&#9670;&nbsp;</a></span>func() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -742,7 +737,7 @@ template&lt;typename Op &gt; </div>
           <td class="memname"><a class="el" href="classmeta_1_1func.html">meta::func</a> meta::type::func </td>
           <td>(</td>
           <td class="paramtype">const char *&#160;</td>
-          <td class="paramname"><em>str</em></td><td>)</td>
+          <td class="paramname"><em>name</em></td><td>)</td>
           <td> const</td>
         </tr>
       </table>
@@ -753,17 +748,17 @@ template&lt;typename Op &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>Returns the meta function associated with a given name. </p>
+<p>Returns the meta function associated with a given identifier. </p>
 <p>Searches recursively among <b>all</b> the meta functions of the given type. This means that the meta functions of the base classes will also be inspected, if any.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">str</td><td>The name to use to search for a meta function. </td></tr>
+    <tr><td class="paramname">name</td><td>Unique identifier. </td></tr>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>The meta function associated with the given name, if any. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>The meta function associated with the given identifier, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01933">1933</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01873">1873</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -793,7 +788,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to an array type or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is an array type, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01691">1691</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01628">1628</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -823,7 +818,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a class or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a class, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01715">1715</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01652">1652</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -853,7 +848,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to an enum or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is an enum, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01699">1699</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01636">1636</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -883,7 +878,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a floating-point type or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a floating-point type, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01682">1682</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01619">1619</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -913,7 +908,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a function type or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a function, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01732">1732</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01669">1669</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -943,7 +938,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to an integral type or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is an integral type, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01672">1672</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01609">1609</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -973,7 +968,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a pointer to member function or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a pointer to member function, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01752">1752</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01689">1689</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1003,7 +998,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a pointer to data member or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a pointer to data member, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01742">1742</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01679">1679</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1033,7 +1028,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to a pointer or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is a pointer, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01723">1723</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01660">1660</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1063,7 +1058,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to an union or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is an union, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01707">1707</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01644">1644</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1088,7 @@ template&lt;typename Op &gt; </div>
 <p>Indicates whether a given meta type refers to void or not. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the underlying type is void, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01663">1663</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01600">1600</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1123,7 +1118,7 @@ template&lt;typename Op &gt; </div>
 <p>Returns the name assigned to a given meta type. </p>
 <dl class="section return"><dt>Returns</dt><dd>The name assigned to the meta type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01655">1655</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01592">1592</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1153,7 +1148,7 @@ template&lt;typename Op &gt; </div>
 <p>Returns true if a meta object is valid, false otherwise. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the meta object is valid, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02023">2023</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01963">1963</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1190,7 +1185,7 @@ template&lt;typename Op &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02033">2033</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01973">1973</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1235,7 +1230,7 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01992">1992</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01932">1932</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1281,7 +1276,7 @@ template&lt;typename Key &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The property associated with the given key, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02011">2011</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01951">1951</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -1311,7 +1306,7 @@ template&lt;typename Key &gt; </div>
 <p>Provides the meta type for which the pointer is defined. </p>
 <dl class="section return"><dt>Returns</dt><dd>The meta type for which the pointer is defined or this meta type if it doesn't refer to a pointer type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01771">1771</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01708">1708</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>

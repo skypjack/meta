@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.4.4</span>
+   &#160;<span id="projectnumber">1.4.5</span>
    </div>
   </td>
  </tr>
@@ -68,7 +68,7 @@ $(function() {
 <a href="#friends">Friends</a> &#124;
 <a href="classmeta_1_1conv-members.html">List of all members</a>  </div>
   <div class="headertitle">
-<div class="title">meta::conv Class Reference<span class="mlabels"><span class="mlabel">final</span></span></div>  </div>
+<div class="title">meta::conv Class Reference</div>  </div>
 </div><!--header-->
 <div class="contents">
 
@@ -89,9 +89,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4e475d4811b2836da05964a8cf20b8ab"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1type.html">meta::type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1conv.html#a4e475d4811b2836da05964a8cf20b8ab">type</a> () const noexcept</td></tr>
 <tr class="memdesc:a4e475d4811b2836da05964a8cf20b8ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the meta type of a given meta conversion function.  <a href="#a4e475d4811b2836da05964a8cf20b8ab">More...</a><br /></td></tr>
 <tr class="separator:a4e475d4811b2836da05964a8cf20b8ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af6bae179b64cb5f91e6695dae7ad9f7c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1any.html">any</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1conv.html#af6bae179b64cb5f91e6695dae7ad9f7c">convert</a> (void *instance) const noexcept</td></tr>
-<tr class="memdesc:af6bae179b64cb5f91e6695dae7ad9f7c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts an instance to a given type.  <a href="#af6bae179b64cb5f91e6695dae7ad9f7c">More...</a><br /></td></tr>
-<tr class="separator:af6bae179b64cb5f91e6695dae7ad9f7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d37014f113870c46d428ddd21f41740"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classmeta_1_1any.html">any</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1conv.html#a7d37014f113870c46d428ddd21f41740">convert</a> (const void *instance) const noexcept</td></tr>
+<tr class="memdesc:a7d37014f113870c46d428ddd21f41740"><td class="mdescLeft">&#160;</td><td class="mdescRight">Converts an instance to a given type.  <a href="#a7d37014f113870c46d428ddd21f41740">More...</a><br /></td></tr>
+<tr class="separator:a7d37014f113870c46d428ddd21f41740"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a525d377128c5477c5d7738674b7d9da1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1conv.html#a525d377128c5477c5d7738674b7d9da1">operator bool</a> () const noexcept</td></tr>
 <tr class="memdesc:a525d377128c5477c5d7738674b7d9da1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if a meta object is valid, false otherwise.  <a href="#a525d377128c5477c5d7738674b7d9da1">More...</a><br /></td></tr>
 <tr class="separator:a525d377128c5477c5d7738674b7d9da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -111,10 +111,10 @@ template&lt;typename &gt; </td></tr>
 <div class="textblock"><p>Meta conversion function object. </p>
 <p>A meta conversion function is an opaque container for a conversion function to be used to convert a given instance to another type. </p>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00993">993</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00933">933</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="af6bae179b64cb5f91e6695dae7ad9f7c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af6bae179b64cb5f91e6695dae7ad9f7c">&#9670;&nbsp;</a></span>convert()</h2>
+<a id="a7d37014f113870c46d428ddd21f41740"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d37014f113870c46d428ddd21f41740">&#9670;&nbsp;</a></span>convert()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -125,7 +125,7 @@ template&lt;typename &gt; </td></tr>
         <tr>
           <td class="memname"><a class="el" href="classmeta_1_1any.html">any</a> meta::conv::convert </td>
           <td>(</td>
-          <td class="paramtype">void *&#160;</td>
+          <td class="paramtype">const void *&#160;</td>
           <td class="paramname"><em>instance</em></td><td>)</td>
           <td> const</td>
         </tr>
@@ -146,7 +146,7 @@ template&lt;typename &gt; </td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An opaque pointer to the instance to convert. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01024">1024</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00964">964</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -176,7 +176,7 @@ template&lt;typename &gt; </td></tr>
 <p>Returns true if a meta object is valid, false otherwise. </p>
 <dl class="section return"><dt>Returns</dt><dd>True if the meta object is valid, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01032">1032</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00972">972</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -213,7 +213,7 @@ template&lt;typename &gt; </td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01042">1042</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00982">982</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -243,7 +243,7 @@ template&lt;typename &gt; </td></tr>
 <p>Returns the meta type to which a meta conversion function belongs. </p>
 <dl class="section return"><dt>Returns</dt><dd>The meta type to which the meta conversion function belongs. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02073">2073</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02013">2013</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -273,7 +273,7 @@ template&lt;typename &gt; </td></tr>
 <p>Returns the meta type of a given meta conversion function. </p>
 <dl class="section return"><dt>Returns</dt><dd>The meta type of the meta conversion function. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02078">2078</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l02018">2018</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
