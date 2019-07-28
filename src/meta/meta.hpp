@@ -2,12 +2,11 @@
 #define META_META_HPP
 
 
-#include <tuple>
 #include <array>
 #include <memory>
 #include <string>
-#include <cstring>
 #include <cassert>
+#include <cstring>
 #include <cstddef>
 #include <utility>
 #include <functional>
@@ -18,7 +17,7 @@ namespace meta {
 
 
 class any;
-class handle;
+struct handle;
 class prop;
 class base;
 class conv;
@@ -41,7 +40,7 @@ namespace internal {
 struct type_node;
 
 
-struct prop_node final {
+struct prop_node {
     prop_node * next;
     any(* const key)();
     any(* const value)();
@@ -49,7 +48,7 @@ struct prop_node final {
 };
 
 
-struct base_node final {
+struct base_node {
     base_node ** const underlying;
     type_node * const parent;
     base_node * next;
@@ -59,17 +58,17 @@ struct base_node final {
 };
 
 
-struct conv_node final {
+struct conv_node {
     conv_node ** const underlying;
     type_node * const parent;
     conv_node * next;
     type_node *(* const ref)() noexcept;
-    any(* const convert)(void *);
+    any(* const convert)(const void *);
     conv(* const clazz)() noexcept;
 };
 
 
-struct ctor_node final {
+struct ctor_node {
     using size_type = std::size_t;
     ctor_node ** const underlying;
     type_node * const parent;
@@ -82,7 +81,7 @@ struct ctor_node final {
 };
 
 
-struct dtor_node final {
+struct dtor_node {
     dtor_node ** const underlying;
     type_node * const parent;
     bool(* const invoke)(handle);
@@ -90,7 +89,7 @@ struct dtor_node final {
 };
 
 
-struct data_node final {
+struct data_node {
     data_node ** const underlying;
     const char *name;
     std::size_t id;
@@ -106,7 +105,7 @@ struct data_node final {
 };
 
 
-struct func_node final {
+struct func_node {
     using size_type = std::size_t;
     func_node ** const underlying;
     const char *name;
@@ -124,7 +123,7 @@ struct func_node final {
 };
 
 
-struct type_node final {
+struct type_node {
     using size_type = std::size_t;
     const char *name;
     std::size_t id;
@@ -225,8 +224,7 @@ auto find_if(Op op, const Node *curr) noexcept {
 
 template<auto Member, typename Op>
 auto find_if(Op op, const type_node *node) noexcept
--> decltype(find_if(op, node->*Member))
-{
+-> decltype(find_if(op, node->*Member)) {
     decltype(find_if(op, node->*Member)) ret = nullptr;
 
     if(node) {
@@ -251,8 +249,8 @@ const Type * try_cast(const type_node *node, void *instance) noexcept {
     if(node == type) {
         ret = instance;
     } else {
-        const auto *base = find_if<&type_node::base>([type](auto *node) {
-            return node->ref() == type;
+        const auto *base = find_if<&type_node::base>([type](auto *candidate) {
+            return candidate->ref() == type;
         }, node);
 
         ret = base ? base->cast(instance) : nullptr;
@@ -272,12 +270,12 @@ inline bool can_cast_or_convert(const type_node *from, const type_node *to) noex
 
 template<typename... Args, std::size_t... Indexes>
 inline auto ctor(std::index_sequence<Indexes...>, const type_node *node) noexcept {
-    return internal::find_if([](auto *node) {
-        return node->size == sizeof...(Args) &&
+    return internal::find_if([](auto *candidate) {
+        return candidate->size == sizeof...(Args) &&
                 (([](auto *from, auto *to) {
                     return internal::can_cast_or_convert<&internal::type_node::base>(from, to)
                             || internal::can_cast_or_convert<&internal::type_node::conv>(from, to);
-                }(internal::type_info<Args>::resolve(), node->arg(Indexes))) && ...);
+                }(internal::type_info<Args>::resolve(), candidate->arg(Indexes))) && ...);
     }, node->ctor);
 }
 
@@ -303,75 +301,42 @@ inline auto ctor(std::index_sequence<Indexes...>, const type_node *node) noexcep
  * of pointers. This will greatly improve the use of the cache, thus increasing
  * the overall performance.
  */
-class any final {
+class any {
     /*! @brief A meta handle is allowed to _inherit_ from a meta any. */
-    friend class handle;
+    friend struct handle;
 
     using storage_type = std::aligned_storage_t<sizeof(void *), alignof(void *)>;
     using compare_fn_type = bool(const void *, const void *);
     using copy_fn_type = void *(storage_type &, const void *);
     using destroy_fn_type = void(storage_type &);
-    using steal_fn_type = void *(storage_type &, storage_type &, destroy_fn_type *, void *) noexcept;
+    using steal_fn_type = void *(storage_type &, storage_type &, destroy_fn_type *) noexcept;
 
     template<typename Type, typename = std::void_t<>>
     struct type_traits {
-        using chunk_type = std::aligned_storage_t<sizeof(Type), alignof(Type)>;
-
         template<typename... Args>
         static void * instance(storage_type &storage, Args &&... args) {
-            auto chunk = std::make_unique<chunk_type>();
-            auto *instance = new (chunk.get()) Type{std::forward<Args>(args)...};
-            new (&storage) chunk_type *{chunk.get()};
-            chunk.release();
-            return instance;
+            auto instance = std::make_unique<Type>(std::forward<Args>(args)...);
+            new (&storage) Type *{instance.get()};
+            return instance.release();
         }
 
         static void destroy(storage_type &storage) {
             auto *node = internal::type_info<Type>::resolve();
-            auto *chunk = *reinterpret_cast<chunk_type **>(&storage);
-            auto *instance = reinterpret_cast<Type *>(chunk);
+            auto *instance = *reinterpret_cast<Type **>(&storage);
             node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
-            delete chunk;
+            delete instance;
         }
 
-        static void * copy(storage_type &storage, const void *instance) {
-            auto chunk = std::make_unique<chunk_type>();
-            new (&storage) chunk_type *{chunk.get()};
-            auto *other = new (chunk.get()) Type{*static_cast<const Type *>(instance)};
-            chunk.release();
-            return other;
+        static void * copy(storage_type &storage, const void *other) {
+            auto instance = std::make_unique<Type>(*static_cast<const Type *>(other));
+            new (&storage) Type *{instance.get()};
+            return instance.release();
         }
 
-        static void * steal(storage_type &to, storage_type &from, destroy_fn_type *, void *instance) noexcept {
-            auto *chunk = *reinterpret_cast<chunk_type **>(&from);
-            new (&to) chunk_type *{chunk};
-            chunk->~chunk_type();
+        static void * steal(storage_type &to, storage_type &from, destroy_fn_type *) noexcept {
+            auto *instance = *reinterpret_cast<Type **>(&from);
+            new (&to) Type *{instance};
             return instance;
-        }
-
-        static bool compare(const void *lhs, const void *rhs) {
-            return any::compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
-        }
-    };
-
-    template<typename Type>
-    struct type_traits<Type, std::enable_if_t<std::is_void_v<Type>>> {
-        static void * instance(storage_type &) {
-            return nullptr;
-        }
-
-        static void destroy(storage_type &) {}
-
-        static void * copy(storage_type &, const void *) {
-            return nullptr;
-        }
-
-        static void * steal(storage_type &, storage_type &, destroy_fn_type *, void *) noexcept {
-            return nullptr;
-        }
-
-        static bool compare(const void *, const void *) {
-            return true;
         }
     };
 
@@ -386,25 +351,23 @@ class any final {
             auto *node = internal::type_info<Type>::resolve();
             auto *instance = reinterpret_cast<Type *>(&storage);
             node->dtor ? node->dtor->invoke(*instance) : node->destroy(*instance);
+            instance->~Type();
         }
 
         static void * copy(storage_type &storage, const void *instance) {
             return new (&storage) Type{*static_cast<const Type *>(instance)};
         }
 
-        static void * steal(storage_type &to, storage_type &from, destroy_fn_type *destroy_fn, void *) noexcept {
+        static void * steal(storage_type &to, storage_type &from, destroy_fn_type *destroy_fn) noexcept {
             void *instance = new (&to) Type{std::move(*reinterpret_cast<Type *>(&from))};
             destroy_fn(from);
             return instance;
         }
-
-        static bool compare(const void *lhs, const void *rhs) {
-            return any::compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
-        }
     };
 
     template<typename Type>
-    static auto compare(int, const Type &lhs, const Type &rhs) -> decltype(lhs == rhs, bool{}) {
+    static auto compare(int, const Type &lhs, const Type &rhs)
+    -> decltype(lhs == rhs, bool{}) {
         return lhs == rhs;
     }
 
@@ -427,41 +390,48 @@ public:
 
     /**
      * @brief Constructs a meta any by directly initializing the new object.
-     *
-     * This class uses a technique called small buffer optimization (SBO) to
-     * completely eliminate the need to allocate memory, where possible.<br/>
-     * From the user's point of view, nothing will change, but the elimination
-     * of allocations will reduce the jumps in memory and therefore will avoid
-     * chasing of pointers. This will greatly improve the use of the cache, thus
-     * increasing the overall performance.
-     *
      * @tparam Type Type of object to use to initialize the container.
      * @tparam Args Types of arguments to use to construct the new instance.
      * @param args Parameters to use to construct the instance.
      */
     template<typename Type, typename... Args>
-    any(std::in_place_type_t<Type>, Args &&... args) {
-        using actual_type = std::remove_cv_t<std::remove_reference_t<Type>>;
-        using traits_type = type_traits<actual_type>;
-
+    explicit any(std::in_place_type_t<Type>, [[maybe_unused]] Args &&... args)
+        : any{}
+    {
         node = internal::type_info<Type>::resolve();
-        instance = traits_type::instance(storage, std::forward<Args>(args)...);
-        destroy_fn = &traits_type::destroy;
-        copy_fn = &traits_type::copy;
-        steal_fn = &traits_type::steal;
-        compare_fn = &traits_type::compare;
+
+        if constexpr(!std::is_void_v<Type>) {
+            using traits_type = type_traits<std::remove_cv_t<std::remove_reference_t<Type>>>;
+            instance = traits_type::instance(storage, std::forward<Args>(args)...);
+            destroy_fn = &traits_type::destroy;
+            copy_fn = &traits_type::copy;
+            steal_fn = &traits_type::steal;
+
+            compare_fn = [](const void *lhs, const void *rhs) {
+                return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
+            };
+        }
+    }
+
+    /**
+     * @brief Constructs a meta any that holds an unmanaged object.
+     * @tparam Type Type of object to use to initialize the container.
+     * @param type An instance of an object to use to initialize the container.
+     */
+    template<typename Type>
+    explicit any(std::in_place_t, Type &type)
+        : any{}
+    {
+        node = internal::type_info<Type>::resolve();
+        instance = &type;
+
+        compare_fn = [](const void *lhs, const void *rhs) {
+            return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
+        };
     }
 
     /**
      * @brief Constructs a meta any from a given value.
-     *
-     * This class uses a technique called small buffer optimization (SBO) to
-     * completely eliminate the need to allocate memory, where possible.<br/>
-     * From the user's point of view, nothing will change, but the elimination
-     * of allocations will reduce the jumps in memory and therefore will avoid
-     * chasing of pointers. This will greatly improve the use of the cache, thus
-     * increasing the overall performance.
-     *
      * @tparam Type Type of object to use to initialize the container.
      * @param type An instance of an object to use to initialize the container.
      */
@@ -477,14 +447,12 @@ public:
     any(const any &other)
         : any{}
     {
-        if(other) {
-            instance = other.copy_fn(storage, other.instance);
-            node = other.node;
-            destroy_fn = other.destroy_fn;
-            compare_fn = other.compare_fn;
-            copy_fn = other.copy_fn;
-            steal_fn = other.steal_fn;
-        }
+        node = other.node;
+        instance = other.copy_fn ? other.copy_fn(storage, other.instance) : other.instance;
+        destroy_fn = other.destroy_fn;
+        compare_fn = other.compare_fn;
+        copy_fn = other.copy_fn;
+        steal_fn = other.steal_fn;
     }
 
     /**
@@ -511,11 +479,32 @@ public:
 
     /**
      * @brief Assignment operator.
+     * @tparam Type Type of object to use to initialize the container.
+     * @param type An instance of an object to use to initialize the container.
+     * @return This meta any object.
+     */
+    template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, any>>>
+    any & operator=(Type &&type) {
+        return (*this = any{std::forward<Type>(type)});
+    }
+
+    /**
+     * @brief Copy assignment operator.
      * @param other The instance to assign.
      * @return This meta any object.
      */
-    any & operator=(any other) {
-        swap(other, *this);
+    any & operator=(const any &other) {
+        return (*this = any{other});
+    }
+
+    /**
+     * @brief Move assignment operator.
+     * @param other The instance to assign.
+     * @return This meta any object.
+     */
+    any & operator=(any &&other) noexcept {
+        any any{std::move(other)};
+        swap(any, *this);
         return *this;
     }
 
@@ -533,23 +522,25 @@ public:
         return instance;
     }
 
-    /**
-     * @brief Returns an opaque pointer to the contained instance.
-     * @return An opaque pointer the contained instance, if any.
-     */
+    /*! @copydoc data */
     void * data() noexcept {
         return const_cast<void *>(std::as_const(*this).data());
     }
 
     /**
-     * @brief Checks if it's possible to cast an instance to a given type.
+     * @brief Tries to cast an instance to a given type.
      * @tparam Type Type to which to cast the instance.
-     * @return True if the cast is viable, false otherwise.
+     * @return A (possibly null) pointer to the contained instance.
      */
     template<typename Type>
-    bool can_cast() const noexcept {
-        const auto *type = internal::type_info<Type>::resolve();
-        return internal::can_cast_or_convert<&internal::type_node::base>(node, type);
+    const Type * try_cast() const noexcept {
+        return internal::try_cast<Type>(node, instance);
+    }
+
+    /*! @copydoc try_cast */
+    template<typename Type>
+    Type * try_cast() noexcept {
+        return const_cast<Type *>(std::as_const(*this).try_cast<Type>());
     }
 
     /**
@@ -568,38 +559,14 @@ public:
      */
     template<typename Type>
     const Type & cast() const noexcept {
-        assert(can_cast<Type>());
-        return *internal::try_cast<Type>(node, instance);
+        assert(try_cast<Type>());
+        return *try_cast<Type>();
     }
 
-    /**
-     * @brief Tries to cast an instance to a given type.
-     *
-     * The type of the instance must be such that the cast is possible.
-     *
-     * @warning
-     * Attempting to perform a cast that isn't viable results in undefined
-     * behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode in case
-     * the cast is not feasible.
-     *
-     * @tparam Type Type to which to cast the instance.
-     * @return A reference to the contained instance.
-     */
+    /*! @copydoc cast */
     template<typename Type>
     Type & cast() noexcept {
         return const_cast<Type &>(std::as_const(*this).cast<Type>());
-    }
-
-    /**
-     * @brief Checks if it's possible to convert an instance to a given type.
-     * @tparam Type Type to which to convert the instance.
-     * @return True if the conversion is viable, false otherwise.
-     */
-    template<typename Type>
-    bool can_convert() const noexcept {
-        const auto *type = internal::type_info<Type>::resolve();
-        return internal::can_cast_or_convert<&internal::type_node::conv>(node, type);
     }
 
     /**
@@ -615,8 +582,8 @@ public:
         if(const auto *type = internal::type_info<Type>::resolve(); node == type) {
             any = *static_cast<const Type *>(instance);
         } else {
-            const auto *conv = internal::find_if<&internal::type_node::conv>([type](auto *node) {
-                return node->ref() == type;
+            const auto *conv = internal::find_if<&internal::type_node::conv>([type](auto *other) {
+                return other->ref() == type;
             }, node);
 
             if(conv) {
@@ -638,7 +605,7 @@ public:
 
         if(!valid) {
             if(auto any = std::as_const(*this).convert<Type>(); any) {
-                std::swap(*this, any);
+                swap(any, *this);
                 valid = true;
             }
         }
@@ -663,7 +630,7 @@ public:
      * @return False if the container is empty, true otherwise.
      */
     explicit operator bool() const noexcept {
-        return destroy_fn;
+        return node;
     }
 
     /**
@@ -673,7 +640,7 @@ public:
      * otherwise.
      */
     bool operator==(const any &other) const noexcept {
-        return (!compare_fn && !other.compare_fn) || (compare_fn && other.compare_fn && node == other.node && compare_fn(instance, other.instance));
+        return node == other.node && ((!compare_fn && !other.compare_fn) || compare_fn(instance, other.instance));
     }
 
     /**
@@ -682,19 +649,19 @@ public:
      * @param rhs A valid meta any object.
      */
     friend void swap(any &lhs, any &rhs) noexcept {
-        using std::swap;
-
-        if(lhs && rhs) {
+        if(lhs.steal_fn && rhs.steal_fn) {
             storage_type buffer;
-            void *instance = lhs.steal_fn(buffer, lhs.storage, lhs.destroy_fn, lhs.instance);
-            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn, rhs.instance);
-            rhs.instance = lhs.steal_fn(rhs.storage, buffer, lhs.destroy_fn, instance);
-        } else if(lhs) {
-            rhs.instance = lhs.steal_fn(rhs.storage, lhs.storage, lhs.destroy_fn, lhs.instance);
-            lhs.instance = nullptr;
-        } else if(rhs) {
-            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn, rhs.instance);
-            rhs.instance = nullptr;
+            lhs.steal_fn(buffer, lhs.storage, lhs.destroy_fn);
+            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn);
+            rhs.instance = lhs.steal_fn(rhs.storage, buffer, lhs.destroy_fn);
+        } else if(lhs.steal_fn) {
+            lhs.instance = rhs.instance;
+            rhs.instance = lhs.steal_fn(rhs.storage, lhs.storage, lhs.destroy_fn);
+        } else if(rhs.steal_fn) {
+            rhs.instance = lhs.instance;
+            lhs.instance = rhs.steal_fn(lhs.storage, rhs.storage, rhs.destroy_fn);
+        } else {
+            std::swap(lhs.instance, rhs.instance);
         }
 
         std::swap(lhs.node, rhs.node);
@@ -725,19 +692,7 @@ private:
  * responsible for ensuring that the target object remains alive for the entire
  * interval of use of the handle.
  */
-class handle final {
-    handle(int, any &any) noexcept
-        : node{any.node},
-          instance{any.instance}
-    {}
-
-    template<typename Type>
-    handle(char, Type &&instance) noexcept
-        : node{internal::type_info<Type>::resolve()},
-          instance{&instance}
-    {}
-
-public:
+struct handle {
     /*! @brief Default constructor. */
     handle() noexcept
         : node{nullptr},
@@ -745,13 +700,23 @@ public:
     {}
 
     /**
+     * @brief Constructs a meta handle from a meta any object.
+     * @param any A reference to an object to use to initialize the handle.
+     */
+    handle(any &any) noexcept
+        : node{any.node},
+          instance{any.instance}
+    {}
+
+    /**
      * @brief Constructs a meta handle from a given instance.
      * @tparam Type Type of object to use to initialize the handle.
-     * @param instance A reference to an object to use to initialize the handle.
+     * @param obj A reference to an object to use to initialize the handle.
      */
     template<typename Type, typename = std::enable_if_t<!std::is_same_v<std::remove_cv_t<std::remove_reference_t<Type>>, handle>>>
-    handle(Type &&instance) noexcept
-        : handle{0, std::forward<Type>(instance)}
+    handle(Type &obj) noexcept
+        : node{internal::type_info<Type>::resolve()},
+          instance{&obj}
     {}
 
     /**
@@ -761,44 +726,6 @@ public:
     inline meta::type type() const noexcept;
 
     /**
-     * @brief Tries to cast an instance to a given type.
-     *
-     * The type of the instance must be such that the conversion is possible.
-     *
-     * @warning
-     * Attempting to perform a conversion that isn't viable results in undefined
-     * behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode in case
-     * the conversion is not feasible.
-     *
-     * @tparam Type Type to which to cast the instance.
-     * @return A pointer to the contained instance.
-     */
-    template<typename Type>
-    const Type * try_cast() const noexcept {
-        return internal::try_cast<Type>(node, instance);
-    }
-
-    /**
-     * @brief Tries to cast an instance to a given type.
-     *
-     * The type of the instance must be such that the conversion is possible.
-     *
-     * @warning
-     * Attempting to perform a conversion that isn't viable results in undefined
-     * behavior.<br/>
-     * An assertion will abort the execution at runtime in debug mode in case
-     * the conversion is not feasible.
-     *
-     * @tparam Type Type to which to cast the instance.
-     * @return A pointer to the contained instance.
-     */
-    template<typename Type>
-    Type * try_cast() noexcept {
-        return const_cast<Type *>(std::as_const(*this).try_cast<Type>());
-    }
-
-    /**
      * @brief Returns an opaque pointer to the contained instance.
      * @return An opaque pointer the contained instance, if any.
      */
@@ -806,12 +733,25 @@ public:
         return instance;
     }
 
-    /**
-     * @brief Returns an opaque pointer to the contained instance.
-     * @return An opaque pointer the contained instance, if any.
-     */
+    /*! @copydoc data */
     void * data() noexcept {
         return const_cast<void *>(std::as_const(*this).data());
+    }
+
+    /**
+     * @brief Tries to cast an instance to a given type.
+     * @tparam Type Type to which to cast the instance.
+     * @return A (possibly null) pointer to the underlying object.
+     */
+    template<typename Type>
+    const Type * data() const noexcept {
+        return internal::try_cast<Type>(node, instance);
+    }
+
+    /*! @copydoc data */
+    template<typename Type>
+    Type * data() noexcept {
+        return const_cast<Type *>(std::as_const(*this).data<Type>());
     }
 
     /**
@@ -845,12 +785,12 @@ inline bool operator!=(const any &lhs, const any &rhs) noexcept {
  * A meta property is an opaque container for a key/value pair.<br/>
  * Properties are associated with any other meta object to enrich it.
  */
-class prop final {
+class prop {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    prop(const internal::prop_node *node) noexcept
-        : node{node}
+    prop(const internal::prop_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -915,12 +855,12 @@ inline bool operator!=(const prop &lhs, const prop &rhs) noexcept {
  * A meta base is an opaque container for a base class to be used to walk
  * through hierarchies.
  */
-class base final {
+class base {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    base(const internal::base_node *node) noexcept
-        : node{node}
+    base(const internal::base_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -990,12 +930,12 @@ inline bool operator!=(const base &lhs, const base &rhs) noexcept {
  * A meta conversion function is an opaque container for a conversion function
  * to be used to convert a given instance to another type.
  */
-class conv final {
+class conv {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    conv(const internal::conv_node *node) noexcept
-        : node{node}
+    conv(const internal::conv_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1021,7 +961,7 @@ public:
      * @param instance The instance to convert.
      * @return An opaque pointer to the instance to convert.
      */
-    any convert(void *instance) const noexcept {
+    any convert(const void *instance) const noexcept {
         return node->convert(instance);
     }
 
@@ -1065,12 +1005,12 @@ inline bool operator!=(const conv &lhs, const conv &rhs) noexcept {
  * A meta constructor is an opaque container for a function to be used to
  * construct instances of a given type.
  */
-class ctor final {
+class ctor {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    ctor(const internal::ctor_node *node) noexcept
-        : node{node}
+    ctor(const internal::ctor_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1101,7 +1041,7 @@ public:
      * @param index The index of the argument of which to return the meta type.
      * @return The meta type of the i-th argument of a meta constructor, if any.
      */
-    inline meta::type arg(size_type index) const noexcept;
+    meta::type arg(size_type index) const noexcept;
 
     /**
      * @brief Creates an instance of the underlying type, if possible.
@@ -1134,8 +1074,8 @@ public:
     template<typename Op>
     std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
-        internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node->prop);
     }
 
@@ -1148,8 +1088,8 @@ public:
     template<typename Key>
     std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
-        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
-            return curr->key() == key;
+        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *candidate) {
+            return candidate->key() == key;
         }, node->prop);
 
         return curr ? curr->clazz() : meta::prop{};
@@ -1195,12 +1135,12 @@ inline bool operator!=(const ctor &lhs, const ctor &rhs) noexcept {
  * A meta destructor is an opaque container for a function to be used to
  * destroy instances of a given type.
  */
-class dtor final {
+class dtor {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    dtor(const internal::dtor_node *node) noexcept
-        : node{node}
+    dtor(const internal::dtor_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1269,12 +1209,12 @@ inline bool operator!=(const dtor &lhs, const dtor &rhs) noexcept {
  * A meta data is an opaque container for a data member associated with a given
  * type.
  */
-class data final {
+class data {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    data(const internal::data_node *node) noexcept
-        : node{node}
+    data(const internal::data_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1399,8 +1339,8 @@ public:
     template<typename Op>
     std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
-        internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node->prop);
     }
 
@@ -1413,8 +1353,8 @@ public:
     template<typename Key>
     std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
-        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
-            return curr->key() == key;
+        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *candidate) {
+            return candidate->key() == key;
         }, node->prop);
 
         return curr ? curr->clazz() : meta::prop{};
@@ -1460,12 +1400,12 @@ inline bool operator!=(const data &lhs, const data &rhs) noexcept {
  * A meta function is an opaque container for a member function associated with
  * a given type.
  */
-class func final {
+class func {
     /*! @brief A meta factory is allowed to create meta objects. */
     template<typename> friend class factory;
 
-    func(const internal::func_node *node) noexcept
-        : node{node}
+    func(const internal::func_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1567,8 +1507,8 @@ public:
     template<typename Op>
     std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
-        internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node->prop);
     }
 
@@ -1581,8 +1521,8 @@ public:
     template<typename Key>
     std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
-        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *curr) {
-            return curr->key() == key;
+        const auto *curr = internal::find_if([key = any{std::forward<Key>(key)}](auto *candidate) {
+            return candidate->key() == key;
         }, node->prop);
 
         return curr ? curr->clazz() : meta::prop{};
@@ -1628,15 +1568,12 @@ inline bool operator!=(const func &lhs, const func &rhs) noexcept {
  * A meta type is the starting point for accessing a reflected type, thus being
  * able to work through it on real objects.
  */
-class type final {
-    /*! @brief A meta factory is allowed to create meta objects. */
-    template<typename> friend class factory;
-
+class type {
     /*! @brief A meta node is allowed to create meta objects. */
     template<typename...> friend struct internal::info_node;
 
-    type(const internal::type_node *node) noexcept
-        : node{node}
+    type(const internal::type_node *curr) noexcept
+        : node{curr}
     {}
 
 public:
@@ -1781,23 +1718,24 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    void base(Op op) const noexcept {
-        internal::iterate<&internal::type_node::base>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+    std::enable_if_t<std::is_invocable_v<Op, meta::base>, void>
+    base(Op op) const noexcept {
+        internal::iterate<&internal::type_node::base>([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node);
     }
 
     /**
-     * @brief Returns the meta base associated with a given name.
+     * @brief Returns the meta base associated with a given identifier.
      *
      * Searches recursively among **all** the base classes of the given type.
      *
-     * @param str The name to use to search for a meta base.
-     * @return The meta base associated with the given name, if any.
+     * @param name Unique identifier.
+     * @return The meta base associated with the given identifier, if any.
      */
-    meta::base base(const char *str) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::base>([id = std::hash<std::string>{}(str)](auto *node) {
-            return node->ref()->id == id;
+    meta::base base(const char *name) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::base>([id = std::hash<std::string>{}(name)](auto *candidate) {
+            return candidate->ref()->id == id;
         }, node);
 
         return curr ? curr->clazz() : meta::base{};
@@ -1814,8 +1752,8 @@ public:
      */
     template<typename Op>
     void conv(Op op) const noexcept {
-        internal::iterate<&internal::type_node::conv>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate<&internal::type_node::conv>([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node);
     }
 
@@ -1831,8 +1769,8 @@ public:
      */
     template<typename Type>
     meta::conv conv() const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::conv>([type = internal::type_info<Type>::resolve()](auto *node) {
-            return node->ref() == type;
+        const auto *curr = internal::find_if<&internal::type_node::conv>([type = internal::type_info<Type>::resolve()](auto *candidate) {
+            return candidate->ref() == type;
         }, node);
 
         return curr ? curr->clazz() : meta::conv{};
@@ -1845,8 +1783,8 @@ public:
      */
     template<typename Op>
     void ctor(Op op) const noexcept {
-        internal::iterate([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node->ctor);
     }
 
@@ -1879,25 +1817,26 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    void data(Op op) const noexcept {
-        internal::iterate<&internal::type_node::data>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+    std::enable_if_t<std::is_invocable_v<Op, meta::data>, void>
+    data(Op op) const noexcept {
+        internal::iterate<&internal::type_node::data>([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node);
     }
 
     /**
-     * @brief Returns the meta data associated with a given name.
+     * @brief Returns the meta data associated with a given identifier.
      *
      * Searches recursively among **all** the meta data of the given type. This
      * means that the meta data of the base classes will also be inspected, if
      * any.
      *
-     * @param str The name to use to search for a meta data.
-     * @return The meta data associated with the given name, if any.
+     * @param name Unique identifier.
+     * @return The meta data associated with the given identifier, if any.
      */
-    meta::data data(const char *str) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::data>([id = std::hash<std::string>{}(str)](auto *node) {
-            return node->id == id;
+    meta::data data(const char *name) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::data>([id = std::hash<std::string>{}(name)](auto *candidate) {
+            return candidate->id == id;
         }, node);
 
         return curr ? curr->clazz() : meta::data{};
@@ -1914,25 +1853,26 @@ public:
      * @param op A valid function object.
      */
     template<typename Op>
-    void func(Op op) const noexcept {
-        internal::iterate<&internal::type_node::func>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+    std::enable_if_t<std::is_invocable_v<Op, meta::func>, void>
+    func(Op op) const noexcept {
+        internal::iterate<&internal::type_node::func>([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node);
     }
 
     /**
-     * @brief Returns the meta function associated with a given name.
+     * @brief Returns the meta function associated with a given identifier.
      *
      * Searches recursively among **all** the meta functions of the given type.
      * This means that the meta functions of the base classes will also be
      * inspected, if any.
      *
-     * @param str The name to use to search for a meta function.
-     * @return The meta function associated with the given name, if any.
+     * @param name Unique identifier.
+     * @return The meta function associated with the given identifier, if any.
      */
-    meta::func func(const char *str) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::func>([id = std::hash<std::string>{}(str)](auto *node) {
-            return node->id == id;
+    meta::func func(const char *name) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::func>([id = std::hash<std::string>{}(name)](auto *candidate) {
+            return candidate->id == id;
         }, node);
 
         return curr ? curr->clazz() : meta::func{};
@@ -1954,9 +1894,9 @@ public:
         std::array<any, sizeof...(Args)> arguments{{std::forward<Args>(args)...}};
         any any{};
 
-        internal::find_if<&internal::type_node::ctor>([data = arguments.data(), &any](auto *node) -> bool {
-            if(node->size == sizeof...(args)) {
-                any = node->invoke(data);
+        internal::find_if<&internal::type_node::ctor>([data = arguments.data(), &any](auto *curr) -> bool {
+            if(curr->size == sizeof...(args)) {
+                any = curr->invoke(data);
             }
 
             return static_cast<bool>(any);
@@ -1990,8 +1930,8 @@ public:
     template<typename Op>
     std::enable_if_t<std::is_invocable_v<Op, meta::prop>, void>
     prop(Op op) const noexcept {
-        internal::iterate<&internal::type_node::prop>([op = std::move(op)](auto *node) {
-            op(node->clazz());
+        internal::iterate<&internal::type_node::prop>([op = std::move(op)](auto *curr) {
+            op(curr->clazz());
         }, node);
     }
 
@@ -2009,8 +1949,8 @@ public:
     template<typename Key>
     std::enable_if_t<!std::is_invocable_v<Key, meta::prop>, meta::prop>
     prop(Key &&key) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::prop>([key = any{std::forward<Key>(key)}](auto *curr) {
-            return curr->key() == key;
+        const auto *curr = internal::find_if<&internal::type_node::prop>([key = any{std::forward<Key>(key)}](auto *candidate) {
+            return candidate->key() == key;
         }, node);
 
         return curr ? curr->clazz() : meta::prop{};
@@ -2129,216 +2069,8 @@ inline meta::type func::arg(size_type index) const noexcept {
 namespace internal {
 
 
-template<typename...>
-struct function_helper;
-
-
-template<typename Ret, typename... Args>
-struct function_helper<Ret(Args...)> {
-    using return_type = Ret;
-    using args_type = std::tuple<Args...>;
-
-    template<std::size_t Index>
-    using arg_type = std::decay_t<std::tuple_element_t<Index, args_type>>;
-
-    static constexpr auto size = sizeof...(Args);
-
-    static auto arg(typename internal::func_node::size_type index) noexcept {
-        return std::array<type_node *, sizeof...(Args)>{{type_info<Args>::resolve()...}}[index];
-    }
-};
-
-
-template<typename Class, typename Ret, typename... Args, bool Const, bool Static>
-struct function_helper<Class, Ret(Args...), std::bool_constant<Const>, std::bool_constant<Static>>: function_helper<Ret(Args...)> {
-    using class_type = Class;
-    static constexpr auto is_const = Const;
-    static constexpr auto is_static = Static;
-};
-
-
-template<typename Ret, typename... Args, typename Class>
-constexpr function_helper<Class, Ret(Args...), std::bool_constant<false>, std::bool_constant<false>>
-to_function_helper(Ret(Class:: *)(Args...));
-
-
-template<typename Ret, typename... Args, typename Class>
-constexpr function_helper<Class, Ret(Args...), std::bool_constant<true>, std::bool_constant<false>>
-to_function_helper(Ret(Class:: *)(Args...) const);
-
-
-template<typename Ret, typename... Args>
-constexpr function_helper<void, Ret(Args...), std::bool_constant<false>, std::bool_constant<true>>
-to_function_helper(Ret(*)(Args...));
-
-
-template<auto Func>
-struct function_helper<std::integral_constant<decltype(Func), Func>>: decltype(to_function_helper(Func)) {};
-
-
 template<typename Type>
-inline bool destroy([[maybe_unused]] handle handle) {
-    bool accepted = false;
-
-    if constexpr(std::is_object_v<Type> && !std::is_array_v<Type>) {
-        accepted = (handle.type() == type_info<Type>::resolve()->clazz());
-
-        if(accepted) {
-            static_cast<Type *>(handle.data())->~Type();
-        }
-    }
-
-    return accepted;
-}
-
-template<typename Type, typename... Args, std::size_t... Indexes>
-inline any construct(any * const args, std::index_sequence<Indexes...>) {
-    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_cast{{(args+Indexes)->can_cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...}};
-    [[maybe_unused]] std::array<bool, sizeof...(Args)> can_convert{{(std::get<Indexes>(can_cast) ? false : (args+Indexes)->can_convert<std::remove_cv_t<std::remove_reference_t<Args>>>())...}};
-    any any{};
-
-    if(((std::get<Indexes>(can_cast) || std::get<Indexes>(can_convert)) && ...)) {
-        ((std::get<Indexes>(can_convert) ? void((args+Indexes)->convert<std::remove_cv_t<std::remove_reference_t<Args>>>()) : void()), ...);
-        any.emplace<Type>((args+Indexes)->cast<std::remove_cv_t<std::remove_reference_t<Args>>>()...);
-    }
-
-    return any;
-}
-
-
-template<bool Const, typename Type, auto Data>
-bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_unused]] any value) {
-    bool accepted = false;
-
-    if constexpr(!Const) {
-        if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
-            using helper_type = function_helper<std::integral_constant<decltype(Data), Data>>;
-            using data_type = std::decay_t<std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>>;
-            static_assert(std::is_invocable_v<decltype(Data), Type *, data_type>);
-            accepted = value.can_cast<data_type>() || value.convert<data_type>();
-            auto *clazz = handle.try_cast<Type>();
-
-            if(accepted && clazz) {
-                std::invoke(Data, clazz, value.cast<data_type>());
-            }
-        } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
-            using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
-            static_assert(std::is_invocable_v<decltype(Data), Type>);
-            auto *clazz = handle.try_cast<Type>();
-
-            if constexpr(std::is_array_v<data_type>) {
-                using underlying_type = std::remove_extent_t<data_type>;
-                accepted = index.can_cast<std::size_t>() && (value.can_cast<underlying_type>() || value.convert<underlying_type>());
-
-                if(accepted && clazz) {
-                    std::invoke(Data, clazz)[index.cast<std::size_t>()] = value.cast<underlying_type>();
-                }
-            } else {
-                accepted = value.can_cast<data_type>() || value.convert<data_type>();
-
-                if(accepted && clazz) {
-                    std::invoke(Data, clazz) = value.cast<data_type>();
-                }
-            }
-        } else {
-            static_assert(std::is_pointer_v<decltype(Data)>);
-            using data_type = std::remove_cv_t<std::remove_reference_t<decltype(*Data)>>;
-
-            if constexpr(std::is_array_v<data_type>) {
-                using underlying_type = std::remove_extent_t<data_type>;
-                accepted = index.can_cast<std::size_t>() && (value.can_cast<underlying_type>() || value.convert<underlying_type>());
-
-                if(accepted) {
-                    (*Data)[index.cast<std::size_t>()] = value.cast<underlying_type>();
-                }
-            } else {
-                accepted = value.can_cast<data_type>() || value.convert<data_type>();
-
-                if(accepted) {
-                    *Data = value.cast<data_type>();
-                }
-            }
-        }
-    }
-
-    return accepted;
-}
-
-
-template<typename Type, auto Data>
-inline any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
-    if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
-        static_assert(std::is_invocable_v<decltype(Data), Type *>);
-        auto *clazz = handle.try_cast<Type>();
-        return clazz ? std::invoke(Data, clazz) : any{};
-    } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
-        using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
-        static_assert(std::is_invocable_v<decltype(Data), Type *>);
-        auto *clazz = handle.try_cast<Type>();
-
-        if constexpr(std::is_array_v<data_type>) {
-            return (clazz && index.can_cast<std::size_t>()) ? std::invoke(Data, clazz)[index.cast<std::size_t>()] : any{};
-        } else {
-            return clazz ? std::invoke(Data, clazz) : any{};
-        }
-    } else {
-        static_assert(std::is_pointer_v<decltype(Data)>);
-
-        if constexpr(std::is_array_v<std::remove_pointer_t<decltype(Data)>>) {
-            return index.can_cast<std::size_t>() ? (*Data)[index.cast<std::size_t>()] : any{};
-        } else {
-            return any{*Data};
-        }
-    }
-}
-
-
-template<typename Type, auto Func, std::size_t... Indexes>
-std::enable_if_t<std::is_function_v<std::remove_pointer_t<decltype(Func)>>, any>
-invoke(const handle &, any *args, std::index_sequence<Indexes...>) {
-    using helper_type = function_helper<std::integral_constant<decltype(Func), Func>>;
-    any ret{};
-
-    if((((args+Indexes)->can_cast<typename helper_type::template arg_type<Indexes>>()
-            || (args+Indexes)->convert<typename helper_type::template arg_type<Indexes>>()) && ...))
-    {
-        if constexpr(std::is_void_v<typename helper_type::return_type>) {
-            std::invoke(Func, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
-            ret.emplace<void>();
-        } else {
-            ret = any{std::invoke(Func, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
-        }
-    }
-
-    return ret;
-}
-
-
-template<typename Type, auto Member, std::size_t... Indexes>
-std::enable_if_t<std::is_member_function_pointer_v<decltype(Member)>, any>
-invoke(handle &handle, any *args, std::index_sequence<Indexes...>) {
-    using helper_type = function_helper<std::integral_constant<decltype(Member), Member>>;
-    static_assert(std::is_base_of_v<typename helper_type::class_type, Type>);
-    auto *clazz = handle.try_cast<Type>();
-    any ret{};
-
-    if(clazz && (((args+Indexes)->can_cast<typename helper_type::template arg_type<Indexes>>()
-                  || (args+Indexes)->convert<typename helper_type::template arg_type<Indexes>>()) && ...))
-    {
-        if constexpr(std::is_void_v<typename helper_type::return_type>) {
-            std::invoke(Member, clazz, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...);
-            ret.emplace<void>();
-        } else {
-            ret = any{std::invoke(Member, clazz, (args+Indexes)->cast<typename helper_type::template arg_type<Indexes>>()...)};
-        }
-    }
-
-    return ret;
-}
-
-
-template<typename Type>
-type_node * info_node<Type>::resolve() noexcept {
+inline type_node * info_node<Type>::resolve() noexcept {
     if(!type) {
         static type_node node{
             {},
@@ -2357,9 +2089,24 @@ type_node * info_node<Type>::resolve() noexcept {
             std::is_member_object_pointer_v<Type>,
             std::is_member_function_pointer_v<Type>,
             std::extent_v<Type>,
-            []() noexcept -> meta::type { return internal::type_info<std::remove_pointer_t<Type>>::resolve(); },
-            &destroy<Type>,
-            []() noexcept -> meta::type { return &node; }
+            []() noexcept -> meta::type {
+                return internal::type_info<std::remove_pointer_t<Type>>::resolve();
+            },
+            []([[maybe_unused]] handle handle) {
+                bool accepted = false;
+
+                if constexpr(std::is_object_v<Type> && !std::is_array_v<Type>) {
+                    if((handle.type() == type_info<Type>::resolve()->clazz())) {
+                        handle.data<Type>()->~Type();
+                        accepted = true;
+                    }
+                }
+
+                return accepted;
+            },
+            []() noexcept -> meta::type {
+                return &node;
+            }
         };
 
         type = &node;
