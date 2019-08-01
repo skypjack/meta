@@ -749,7 +749,7 @@ public:
     template<auto Func, typename... Property>
     factory func(const char *name, Property &&... property) noexcept {
         using owner_type = std::integral_constant<decltype(Func), Func>;
-        using func_type = internal::function_helper<std::integral_constant<decltype(Func), Func>>;
+        using helper_type = internal::function_helper<std::integral_constant<decltype(Func), Func>>;
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::func_node node{
@@ -759,13 +759,13 @@ public:
             type,
             nullptr,
             nullptr,
-            func_type::size,
-            func_type::is_const,
-            func_type::is_static,
-            &internal::type_info<typename func_type::return_type>::resolve,
-            &func_type::arg,
+            helper_type::size,
+            helper_type::is_const,
+            helper_type::is_static,
+            &internal::type_info<typename helper_type::return_type>::resolve,
+            &helper_type::arg,
             [](handle handle, any *any) {
-                return internal::invoke<Type, Func>(handle, any, std::make_index_sequence<func_type::size>{});
+                return internal::invoke<Type, Func>(handle, any, std::make_index_sequence<helper_type::size>{});
             },
             []() noexcept -> meta::func {
                 return &node;
