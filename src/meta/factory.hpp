@@ -153,7 +153,7 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_
 template<typename Type, auto Data>
 any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
     if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
-       static_assert(std::is_invocable_v<decltype(Data), Type &>);
+        static_assert(std::is_invocable_v<decltype(Data), Type &>);
         auto *clazz = handle.data<Type>();
         return clazz ? std::invoke(Data, *clazz) : any{};
     } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
