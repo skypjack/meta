@@ -12,7 +12,7 @@ enum class properties {
 struct empty_type {
     virtual ~empty_type() = default;
 
-    static void destroy(empty_type *) {
+    static void destroy(empty_type &) {
         ++counter;
     }
 
@@ -71,6 +71,7 @@ struct data_type {
     inline static int h{2};
     inline static const int k{3};
     empty_type empty{};
+    int v{0};
 };
 
 struct array_type {
@@ -86,6 +87,9 @@ struct func_type {
 
     static int h(int v) { return v; }
     static void k(int v) { value = v; }
+
+    int v(int v) const { return (value = v); }
+    int & a() const { return value; }
 
     inline static int value = 0;
 };
@@ -157,11 +161,12 @@ struct Meta: public ::testing::Test {
                 .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>("data")
-                .data<&data_type::i>("i", std::make_pair(properties::prop_int, 0))
+                .data<&data_type::i, meta::as_alias_t>("i", std::make_pair(properties::prop_int, 0))
                 .data<&data_type::j>("j", std::make_pair(properties::prop_int, 1))
                 .data<&data_type::h>("h", std::make_pair(properties::prop_int, 2))
                 .data<&data_type::k>("k", std::make_pair(properties::prop_int, 3))
-                .data<&data_type::empty>("empty");
+                .data<&data_type::empty>("empty")
+                .data<&data_type::v, meta::as_void_t>("v");
 
         meta::reflect<array_type>("array")
                 .data<&array_type::global>("global")
@@ -173,7 +178,9 @@ struct Meta: public ::testing::Test {
                 .func<static_cast<int(func_type:: *)(int) const>(&func_type::f)>("f1", std::make_pair(properties::prop_bool, false))
                 .func<&func_type::g>("g", std::make_pair(properties::prop_bool, false))
                 .func<&func_type::h>("h", std::make_pair(properties::prop_bool, false))
-                .func<&func_type::k>("k", std::make_pair(properties::prop_bool, false));
+                .func<&func_type::k>("k", std::make_pair(properties::prop_bool, false))
+                .func<&func_type::v, meta::as_void_t>("v")
+                .func<&func_type::a, meta::as_alias_t>("a");
 
         meta::reflect<setter_getter_type>("setter_getter")
                 .data<&setter_getter_type::static_setter, &setter_getter_type::static_getter>("x")
@@ -283,10 +290,10 @@ TEST_F(Meta, MetaAnySBOInPlaceTypeConstruction) {
     ASSERT_NE(meta::any{3}, any);
 }
 
-TEST_F(Meta, MetaAnySBOInPlaceConstruction) {
+TEST_F(Meta, MetaAnySBOAsAliasConstruction) {
     int value = 3;
     int other = 42;
-    meta::any any{std::in_place, value};
+    meta::any any{meta::as_alias, value};
 
     ASSERT_TRUE(any);
     ASSERT_FALSE(any.try_cast<std::size_t>());
@@ -295,8 +302,8 @@ TEST_F(Meta, MetaAnySBOInPlaceConstruction) {
     ASSERT_EQ(std::as_const(any).cast<int>(), 3);
     ASSERT_NE(any.data(), nullptr);
     ASSERT_NE(std::as_const(any).data(), nullptr);
-    ASSERT_EQ(any, (meta::any{std::in_place, value}));
-    ASSERT_NE(any, (meta::any{std::in_place, other}));
+    ASSERT_EQ(any, (meta::any{meta::as_alias, value}));
+    ASSERT_NE(any, (meta::any{meta::as_alias, other}));
     ASSERT_NE(any, meta::any{42});
     ASSERT_EQ(meta::any{3}, any);
 }
@@ -390,10 +397,10 @@ TEST_F(Meta, MetaAnyNoSBOInPlaceTypeConstruction) {
     ASSERT_NE(meta::any{fat_type{}}, any);
 }
 
-TEST_F(Meta, MetaAnyNoSBOInPlaceConstruction) {
+TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction) {
     int value = 3;
     fat_type instance{&value};
-    meta::any any{std::in_place, instance};
+    meta::any any{meta::as_alias, instance};
 
     ASSERT_TRUE(any);
     ASSERT_FALSE(any.try_cast<std::size_t>());
@@ -402,7 +409,7 @@ TEST_F(Meta, MetaAnyNoSBOInPlaceConstruction) {
     ASSERT_EQ(std::as_const(any).cast<fat_type>(), instance);
     ASSERT_NE(any.data(), nullptr);
     ASSERT_NE(std::as_const(any).data(), nullptr);
-    ASSERT_EQ(any, (meta::any{std::in_place, instance}));
+    ASSERT_EQ(any, (meta::any{meta::as_alias, instance}));
     ASSERT_EQ(any, meta::any{instance});
     ASSERT_NE(meta::any{fat_type{}}, any);
 }
@@ -1375,6 +1382,29 @@ TEST_F(Meta, MetaDataArray) {
     ASSERT_EQ(data.get(instance, 2).cast<int>(), 9);
 }
 
+TEST_F(Meta, MetaDataAsVoid) {
+    auto data = meta::resolve<data_type>().data("v");
+    data_type instance{};
+
+    ASSERT_TRUE(data.set(instance, 42));
+    ASSERT_EQ(instance.v, 42);
+    ASSERT_EQ(data.get(instance), meta::any{std::in_place_type<void>});
+}
+
+TEST_F(Meta, MetaDataAsAlias) {
+    data_type instance{};
+    auto h_data = meta::resolve<data_type>().data("h");
+    auto i_data = meta::resolve<data_type>().data("i");
+
+    h_data.get(instance).cast<int>() = 3;
+    i_data.get(instance).cast<int>() = 3;
+
+    ASSERT_EQ(h_data.type(), meta::resolve<int>());
+    ASSERT_EQ(i_data.type(), meta::resolve<int>());
+    ASSERT_NE(instance.h, 3);
+    ASSERT_EQ(instance.i, 3);
+}
+
 TEST_F(Meta, MetaFunc) {
     auto func = meta::resolve<func_type>().func("f2");
     func_type instance{};
@@ -1586,6 +1616,24 @@ TEST_F(Meta, MetaFuncCastAndConvert) {
     ASSERT_EQ(any.cast<int>(), 9);
 }
 
+TEST_F(Meta, MetaFuncAsVoid) {
+    auto func = meta::resolve<func_type>().func("v");
+    func_type instance{};
+
+    ASSERT_EQ(func.invoke(instance, 42), meta::any{std::in_place_type<void>});
+    ASSERT_EQ(func.ret(), meta::resolve<void>());
+    ASSERT_EQ(instance.value, 42);
+}
+
+TEST_F(Meta, MetaFuncAsAlias) {
+    func_type instance{};
+    auto func = meta::resolve<func_type>().func("a");
+    func.invoke(instance).cast<int>() = 3;
+
+    ASSERT_EQ(func.ret(), meta::resolve<int>());
+    ASSERT_EQ(instance.value, 3);
+}
+
 TEST_F(Meta, MetaType) {
     auto type = meta::resolve<derived_type>();
 
@@ -1683,7 +1731,7 @@ TEST_F(Meta, MetaTypeData) {
         ++counter;
     });
 
-    ASSERT_EQ(counter, 5);
+    ASSERT_EQ(counter, 6);
     ASSERT_TRUE(type.data("i"));
 }
 
@@ -1695,7 +1743,7 @@ TEST_F(Meta, MetaTypeFunc) {
         ++counter;
     });
 
-    ASSERT_EQ(counter, 6);
+    ASSERT_EQ(counter, 8);
     ASSERT_TRUE(type.func("f1"));
 }
 
