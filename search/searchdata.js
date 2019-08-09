@@ -4,9 +4,10 @@ var indexSectionsWithContent =
   1: "abcdfhpt",
   2: "m",
   3: "abcdefghiknoprstuv~",
-  4: "s",
-  5: "fhis",
-  6: "ch"
+  4: "a",
+  5: "s",
+  6: "fhis",
+  7: "ch"
 };
 
 var indexSectionNames =
@@ -15,9 +16,10 @@ var indexSectionNames =
   1: "classes",
   2: "namespaces",
   3: "functions",
-  4: "typedefs",
-  5: "related",
-  6: "pages"
+  4: "variables",
+  5: "typedefs",
+  6: "related",
+  7: "pages"
 };
 
 var indexSectionLabels =
@@ -26,8 +28,9 @@ var indexSectionLabels =
   1: "Classes",
   2: "Namespaces",
   3: "Functions",
-  4: "Typedefs",
-  5: "Friends",
-  6: "Pages"
+  4: "Variables",
+  5: "Typedefs",
+  6: "Friends",
+  7: "Pages"
 };
 

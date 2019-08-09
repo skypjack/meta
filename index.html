@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.4.5</span>
+   &#160;<span id="projectnumber">1.4.6</span>
    </div>
   </td>
  </tr>
@@ -120,7 +120,8 @@ Reflection in a nutshell</h2>
 <li><em>Destructors</em>. Free functions can be set as destructors of reflected types. The purpose is to give users the ability to free up resources that require special treatment before an object is actually destroyed.<br />
  Use the <code>dtor</code> member function for this purpose:</li>
 </ul>
-<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>).dtor&lt;&amp;destroy&gt;();</div></div><!-- fragment --><ul>
+<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>).dtor&lt;&amp;destroy&gt;();</div></div><!-- fragment --><p>A function should neither delete nor explicitly invoke the destructor of a given instance.</p>
+<ul>
 <li><em>Data members</em>. Both real data members of the underlying type and static and global variables, as well as constants of any kind, can be attached to a meta type. From a client's point of view, all the variables associated with the reflected type will appear as if they were part of the type itself.<br />
  Use the <code>data</code> member function for this purpose:</li>
 </ul>
@@ -195,11 +196,34 @@ Enjoy the runtime</h2>
 <p>All the objects thus obtained as well as the meta types can be explicitly converted to a boolean value to check if they are valid:</p>
 <div class="fragment"><div class="line"><a class="code" href="classmeta_1_1func.html">meta::func</a> func = meta::resolve&lt;my_type&gt;().func(<span class="stringliteral">&quot;member&quot;</span>);</div><div class="line"></div><div class="line"><span class="keywordflow">if</span>(func) {</div><div class="line">    <span class="comment">// ...</span></div><div class="line">}</div></div><!-- fragment --><p>Furthermore, all meta objects with the exception of meta destructors can be iterated through an overload that accepts a callback through which to return them. As an example:</p>
 <div class="fragment"><div class="line">meta::resolve&lt;my_type&gt;().data([](<a class="code" href="classmeta_1_1data.html">meta::data</a> data) {</div><div class="line">    <span class="comment">// ...</span></div><div class="line">});</div></div><!-- fragment --><p>A meta type can also be used to <code>construct</code> or <code>destroy</code> actual instances of the underlying type.<br />
- In particular, the <code>construct</code> member function accepts a variable number of arguments and searches for a match. It returns a <code>any</code> object that may or may not be initialized, depending on whether a suitable constructor has been found or not. On the other side, the <code>destroy</code> member function accepts instances of <code>any</code> as well as actual objects by reference and invokes the registered destructor if any or a default one.<br />
- Be aware that the result of a call to <code>destroy</code> may not be what is expected.</p>
+ In particular, the <code>construct</code> member function accepts a variable number of arguments and searches for a match. It returns a <code>any</code> object that may or may not be initialized, depending on whether a suitable constructor has been found or not. On the other side, the <code>destroy</code> member function accepts instances of <code>any</code> as well as actual objects by reference and invokes the registered destructor if any.<br />
+ Be aware that the result of a call to <code>destroy</code> may not be what is expected. The purpose is to give users the ability to free up resources that require special treatment and <b>not</b> to actually destroy instances.</p>
 <p>Meta types and meta objects in general contain much more than what is said: a plethora of functions in addition to those listed whose purposes and uses go unfortunately beyond the scope of this document.<br />
  I invite anyone interested in the subject to look at the code, experiment and read the official documentation to get the best out of this powerful tool.</p>
 <h2><a class="anchor" id="autotoc_md12"></a>
+Policies: the more, the less</h2>
+<p>Policies are a kind of compile-time directives that can be used when recording reflection information.<br />
+ Their purpose is to require slightly different behavior than the default in some specific cases. For example, when reading a given data member, its value is returned wrapped in a <code>any</code> object which, by default, makes a copy of it. For large objects or if the caller wants to access the original instance, this behavior isn't desirable. Policies are there to offer a solution to this and other problems.</p>
+<p>There are a few alternatives available at the moment:</p>
+<ul>
+<li>The <em>as-is</em> policy, associated with the type <code><a class="el" href="structmeta_1_1as__is__t.html" title="Empty class type used to request the as-is policy. ">meta::as_is_t</a></code>.<br />
+ This is the default policy. In general, it should never be used explicitly, since it's implicitly selected if no other policy is specified.<br />
+ In this case, the return values of the functions as well as the properties exposed as data members are always returned by copy in a dedicated wrapper and therefore associated with their original meta types.</li>
+<li><p class="startli">The <em>as-void</em> policy, associated with the type <code><a class="el" href="structmeta_1_1as__void__t.html" title="Empty class type used to request the as void policy. ">meta::as_void_t</a></code>.<br />
+ Its purpose is to discard the return value of a meta object, whatever it is, thus making it appear as if its type were <code>void</code>.<br />
+ If the use with functions is obvious, it must be said that it's also possible to use this policy with constructors and data members. In the first case, the constructor will be invoked but the returned wrapper will actually be empty. In the second case, instead, the property will not be accessible for reading.</p>
+<p class="startli">As an example of use:</p>
+</li>
+</ul>
+<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>)</div><div class="line">    .func&lt;&amp;my_type::member_function, meta::as_void_t&gt;(<span class="stringliteral">&quot;member&quot;</span>);</div></div><!-- fragment --><ul>
+<li><p class="startli">The <em>as-alias</em> policy, associated with the type <code><a class="el" href="structmeta_1_1as__alias__t.html" title="Empty class type used to request the as alias policy. ">meta::as_alias_t</a></code><br />
+ It allows to build wrappers that act as aliases for the objects used to initialize them. Modifying the object contained in the wrapper for which the <em>aliasing</em> was requested will make it possible to directly modify the instance used to initialize the wrapper itself.<br />
+ This policy works with constructors (for example, when objects are taken from an external container rather than created on demand), data members and functions in general (as long as their return types are lvalue references).</p>
+<p class="startli">As an example of use:</p>
+</li>
+</ul>
+<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>)</div><div class="line">    .data&lt;&amp;my_type::data_member, meta::as_alias_t&gt;(<span class="stringliteral">&quot;member&quot;</span>);</div></div><!-- fragment --><p>Some uses are rather trivial, but it's useful to note that there are some less obvious corner cases that can in turn be solved with the use of policies.</p>
+<h2><a class="anchor" id="autotoc_md13"></a>
 Named constants and enums</h2>
 <p>A special mention should be made for constant values and enums. It wouldn't be necessary, but it will help distracted readers.</p>
 <p>As mentioned, the <code>data</code> member function can be used to reflect constants of any type among the other things.<br />
@@ -209,19 +233,19 @@ Named constants and enums</h2>
 <p>Exporting constant values or elements from an enum is as simple as ever:</p>
 <div class="fragment"><div class="line">meta::reflect&lt;my_enum&gt;()</div><div class="line">        .data&lt;my_enum::a_value&gt;(<span class="stringliteral">&quot;a_value&quot;</span>)</div><div class="line">        .data&lt;my_enum::another_value&gt;(<span class="stringliteral">&quot;another_value&quot;</span>);</div><div class="line"></div><div class="line">meta::reflect&lt;int&gt;().data&lt;2048&gt;(<span class="stringliteral">&quot;max_int&quot;</span>);</div></div><!-- fragment --><p>It goes without saying that accessing them is trivial as well. It's a matter of doing the following, as with any other data member of a meta type:</p>
 <div class="fragment"><div class="line">my_enum value = meta::resolve&lt;my_enum&gt;().data(<span class="stringliteral">&quot;a_value&quot;</span>).<a class="code" href="classmeta_1_1data.html#ace79b791acf52d36ba8ce2406486e360">get</a>({}).cast&lt;my_enum&gt;();</div><div class="line"><span class="keywordtype">int</span> max = meta::resolve&lt;int&gt;().data(<span class="stringliteral">&quot;max_int&quot;</span>).<a class="code" href="classmeta_1_1data.html#ace79b791acf52d36ba8ce2406486e360">get</a>({}).cast&lt;int&gt;();</div></div><!-- fragment --><p>As a side note, remember that all this happens behind the scenes without any allocation because of the small object optimization performed by the meta any class.</p>
-<h2><a class="anchor" id="autotoc_md13"></a>
-Properties and meta objects</h2>
-<p>Sometimes (ie when it comes to creating an editor) it might be useful to be able to attach properties to the meta objects created. Fortunately, this is possible for most of them.<br />
- To attach a property to a meta object, no matter what as long as it supports properties, it is sufficient to provide an object at the time of construction such that <code>std::get&lt;0&gt;</code> and <code>std::get&lt;1&gt;</code> are valid for it. In other terms, the properties are nothing more than key/value pairs users can put in an <code>std::pair</code>. As an example:</p>
-<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>, std::make_pair(<span class="stringliteral">&quot;tooltip&quot;</span>_hs, <span class="stringliteral">&quot;message&quot;</span>));</div></div><!-- fragment --><p>The meta objects that support properties offer then a couple of member functions named <code>prop</code> to iterate them at once and to search a specific property by key:</p>
-<div class="fragment"><div class="line"><span class="comment">// iterate all the properties of a meta type</span></div><div class="line">meta::resolve&lt;my_type&gt;().prop([](<a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop) {</div><div class="line">    <span class="comment">// ...</span></div><div class="line">});</div><div class="line"></div><div class="line"><span class="comment">// search for a given property by name</span></div><div class="line"><a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop = meta::resolve&lt;my_type&gt;().prop(<span class="stringliteral">&quot;tooltip&quot;</span>_hs);</div></div><!-- fragment --><p>Meta properties are objects having a fairly poor interface, all in all. They only provide the <code>key</code> and the <code>value</code> member functions to be used to retrieve the key and the value contained in the form of meta any objects, respectively.</p>
 <h2><a class="anchor" id="autotoc_md14"></a>
+Properties and meta objects</h2>
+<p>Sometimes (for example, when it comes to creating an editor) it might be useful to be able to attach properties to the meta objects created. Fortunately, this is possible for most of them.<br />
+ To attach a property to a meta object, no matter what as long as it supports properties, it is sufficient to provide an object at the time of construction such that <code>std::get&lt;0&gt;</code> and <code>std::get&lt;1&gt;</code> are valid for it. In other terms, the properties are nothing more than key/value pairs users can put in an <code>std::pair</code>. As an example:</p>
+<div class="fragment"><div class="line">meta::reflect&lt;my_type&gt;(<span class="stringliteral">&quot;reflected&quot;</span>, std::make_pair(<span class="stringliteral">&quot;tooltip&quot;</span>, <span class="stringliteral">&quot;message&quot;</span>));</div></div><!-- fragment --><p>The meta objects that support properties offer then a couple of member functions named <code>prop</code> to iterate them at once and to search a specific property by key:</p>
+<div class="fragment"><div class="line"><span class="comment">// iterate all the properties of a meta type</span></div><div class="line">meta::resolve&lt;my_type&gt;().prop([](<a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop) {</div><div class="line">    <span class="comment">// ...</span></div><div class="line">});</div><div class="line"></div><div class="line"><span class="comment">// search for a given property by name</span></div><div class="line"><a class="code" href="classmeta_1_1prop.html">meta::prop</a> prop = meta::resolve&lt;my_type&gt;().prop(<span class="stringliteral">&quot;tooltip&quot;</span>);</div></div><!-- fragment --><p>Meta properties are objects having a fairly poor interface, all in all. They only provide the <code>key</code> and the <code>value</code> member functions to be used to retrieve the key and the value contained in the form of meta any objects, respectively.</p>
+<h2><a class="anchor" id="autotoc_md15"></a>
 Unregister types</h2>
 <p>A type registered with the reflection system can also be unregistered. This means unregistering all its data members, member functions, conversion functions and so on. However, the base classes won't be unregistered, since they don't necessarily depend on it. Similarly, implicitly generated types (as an example, the meta types implicitly generated for function parameters when needed) won't be unregistered.</p>
 <p>To unregister a type, users can use the <code>unregister</code> function from the global namespace:</p>
 <div class="fragment"><div class="line">meta::unregister&lt;my_type&gt;();</div></div><!-- fragment --><p>This function returns a boolean value that is true if the type is actually registered with the reflection system, false otherwise.<br />
  The type can be re-registered later with a completely different name and form.</p>
-<h1><a class="anchor" id="autotoc_md15"></a>
+<h1><a class="anchor" id="autotoc_md16"></a>
 License</h1>
 <p>Code and documentation Copyright (c) 2018-2019 Michele Caini.</p>
 <p>Code released under <a href="https://github.com/skypjack/meta/blob/master/LICENSE">the MIT license</a>. Documentation released under <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.<br />

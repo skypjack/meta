@@ -22,7 +22,7 @@
  <tr style="height: 56px;">
   <td id="projectalign" style="padding-left: 0.5em;">
    <div id="projectname">meta
-   &#160;<span id="projectnumber">1.4.5</span>
+   &#160;<span id="projectnumber">1.4.6</span>
    </div>
   </td>
  </tr>
@@ -61,7 +61,8 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#nested-classes">Classes</a> &#124;
-<a href="#func-members">Functions</a>  </div>
+<a href="#func-members">Functions</a> &#124;
+<a href="#var-members">Variables</a>  </div>
   <div class="headertitle">
 <div class="title">meta Namespace Reference</div>  </div>
 </div><!--header-->
@@ -74,6 +75,15 @@ $(function() {
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1any.html">any</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meta any object.  <a href="classmeta_1_1any.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structmeta_1_1as__alias__t.html">as_alias_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Empty class type used to request the <em>as alias</em> policy.  <a href="structmeta_1_1as__alias__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structmeta_1_1as__is__t.html">as_is_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Empty class type used to request the <em>as-is</em> policy.  <a href="structmeta_1_1as__is__t.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structmeta_1_1as__void__t.html">as_void_t</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Empty class type used to request the <em>as void</em> policy.  <a href="structmeta_1_1as__void__t.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmeta_1_1base.html">base</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Meta base object.  <a href="classmeta_1_1base.html#details">More...</a><br /></td></tr>
@@ -158,6 +168,13 @@ Functions</h2></td></tr>
 <tr class="memitem:a340eec7abf8c0f7502799de682aec5ff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacemeta.html#a340eec7abf8c0f7502799de682aec5ff">operator!=</a> (const <a class="el" href="classmeta_1_1type.html">type</a> &amp;lhs, const <a class="el" href="classmeta_1_1type.html">type</a> &amp;rhs) noexcept</td></tr>
 <tr class="memdesc:a340eec7abf8c0f7502799de682aec5ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if two meta objects refer to the same node.  <a href="#a340eec7abf8c0f7502799de682aec5ff">More...</a><br /></td></tr>
 <tr class="separator:a340eec7abf8c0f7502799de682aec5ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="var-members"></a>
+Variables</h2></td></tr>
+<tr class="memitem:a9f5846c72ca5e474da89265d8b81c901"><td class="memItemLeft" align="right" valign="top"><a id="a9f5846c72ca5e474da89265d8b81c901"></a>
+constexpr <a class="el" href="structmeta_1_1as__alias__t.html">as_alias_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacemeta.html#a9f5846c72ca5e474da89265d8b81c901">as_alias</a></td></tr>
+<tr class="memdesc:a9f5846c72ca5e474da89265d8b81c901"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disambiguation tag. <br /></td></tr>
+<tr class="separator:a9f5846c72ca5e474da89265d8b81c901"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p><code>meta</code> default namespace. </p>
@@ -206,7 +223,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two containers differ in their content, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00777">777</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00780">780</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -254,7 +271,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00847">847</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00850">850</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -302,7 +319,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00922">922</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00925">925</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -350,7 +367,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l00997">997</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01000">1000</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -398,7 +415,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01127">1127</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01130">1130</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -446,7 +463,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01201">1201</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01204">1204</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -494,7 +511,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01392">1392</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01395">1395</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -542,7 +559,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01560">1560</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01563">1563</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -590,7 +607,7 @@ Functions</h2></td></tr>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the two meta objects refer to the same node, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01988">1988</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="meta_8hpp_source.html#l01994">1994</a> of file <a class="el" href="meta_8hpp_source.html">meta.hpp</a>.</p>
 
 </div>
 </div>
@@ -649,7 +666,7 @@ template&lt;typename Type , typename... Property&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta factory for the given type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00847">847</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00854">854</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -689,7 +706,7 @@ template&lt;typename Type &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A meta factory for the given type. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00864">864</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00871">871</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -727,7 +744,7 @@ template&lt;typename Type &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The meta type associated with the given type, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00893">893</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00900">900</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -764,7 +781,7 @@ template&lt;typename Type &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The meta type associated with the given identifier, if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00903">903</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00910">910</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -808,7 +825,7 @@ template&lt;typename Op &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00919">919</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00926">926</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
@@ -848,7 +865,7 @@ template&lt;typename Type &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>True if the type to unregister exists, false otherwise. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00882">882</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="factory_8hpp_source.html#l00889">889</a> of file <a class="el" href="factory_8hpp_source.html">factory.hpp</a>.</p>
 
 </div>
 </div>
