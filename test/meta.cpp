@@ -4,6 +4,16 @@
 #include <meta/factory.hpp>
 #include <meta/meta.hpp>
 
+template<typename Type>
+void set(Type &prop, Type value) {
+    prop = value;
+}
+
+template<typename Type>
+Type get(Type &prop) {
+    return prop;
+}
+
 enum class properties {
     prop_int,
     prop_bool
@@ -136,11 +146,13 @@ struct Meta: public ::testing::Test {
     static void SetUpTestCase() {
         meta::reflect<double>().conv<int>();
 
-        meta::reflect<char>("char", std::make_pair(properties::prop_int, 42));
+        meta::reflect<char>("char", std::make_pair(properties::prop_int, 42))
+                .data<&set<char>, &get<char>>("value");
 
         meta::reflect<properties>()
                 .data<properties::prop_bool>("prop_bool")
-                .data<properties::prop_int>("prop_int");
+                .data<properties::prop_int>("prop_int")
+                .data<&set<properties>, &get<properties>>("value");
 
         meta::reflect<unsigned int>().data<0u>("min").data<100u>("max");
 
@@ -1934,6 +1946,22 @@ TEST_F(Meta, ArithmeticTypeAndNamedConstants) {
 
     ASSERT_EQ(type.data("min").get({}).cast<unsigned int>(), 0u);
     ASSERT_EQ(type.data("max").get({}).cast<unsigned int>(), 100u);
+}
+
+TEST_F(Meta, Variables) {
+    auto p_data = meta::resolve<properties>().data("value");
+    auto c_data = meta::resolve("char").data("value");
+
+    properties prop{properties::prop_int};
+    char c = 'c';
+
+    p_data.set(prop, properties::prop_bool);
+    c_data.set(c, 'x');
+
+    ASSERT_EQ(p_data.get(prop).cast<properties>(), properties::prop_bool);
+    ASSERT_EQ(c_data.get(c).cast<char>(), 'x');
+    ASSERT_EQ(prop, properties::prop_bool);
+    ASSERT_EQ(c, 'x');
 }
 
 TEST_F(Meta, Unregister) {
