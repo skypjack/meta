@@ -309,7 +309,7 @@ class any {
     using compare_fn_type = bool(const void *, const void *);
     using copy_fn_type = void *(storage_type &, const void *);
     using destroy_fn_type = void(void *);
-    using steal_fn_type = void *(storage_type &, void *, destroy_fn_type *) noexcept;
+    using steal_fn_type = void *(storage_type &, void *, destroy_fn_type *);
 
     template<typename Type, typename = std::void_t<>>
     struct type_traits {
@@ -334,7 +334,7 @@ class any {
             return instance.release();
         }
 
-        static void * steal(storage_type &to, void *from, destroy_fn_type *) noexcept {
+        static void * steal(storage_type &to, void *from, destroy_fn_type *) {
             auto *instance = static_cast<Type *>(from);
             new (&to) Type *{instance};
             return instance;
@@ -360,7 +360,7 @@ class any {
             return new (&storage) Type{*static_cast<const Type *>(instance)};
         }
 
-        static void * steal(storage_type &to, void *from, destroy_fn_type *destroy_fn) noexcept {
+        static void * steal(storage_type &to, void *from, destroy_fn_type *destroy_fn) {
             void *instance = new (&to) Type{std::move(*static_cast<Type *>(from))};
             destroy_fn(from);
             return instance;
