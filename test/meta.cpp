@@ -1116,7 +1116,7 @@ TEST_F(Meta, MetaData) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("data"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "i");
+    ASSERT_STREQ(data.name(), "i");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
@@ -1145,7 +1145,7 @@ TEST_F(Meta, MetaDataConst) {
     ASSERT_TRUE(data);
     ASSERT_EQ(data.parent(), meta::resolve("data"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "j");
+    ASSERT_STREQ(data.name(), "j");
     ASSERT_TRUE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 1);
@@ -1173,7 +1173,7 @@ TEST_F(Meta, MetaDataStatic) {
     ASSERT_TRUE(data);
     ASSERT_EQ(data.parent(), meta::resolve("data"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "h");
+    ASSERT_STREQ(data.name(), "h");
     ASSERT_FALSE(data.is_const());
     ASSERT_TRUE(data.is_static());
     ASSERT_EQ(data.get({}).cast<int>(), 2);
@@ -1201,7 +1201,7 @@ TEST_F(Meta, MetaDataConstStatic) {
     ASSERT_TRUE(data);
     ASSERT_EQ(data.parent(), meta::resolve("data"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "k");
+    ASSERT_STREQ(data.name(), "k");
     ASSERT_TRUE(data.is_const());
     ASSERT_TRUE(data.is_static());
     ASSERT_EQ(data.get({}).cast<int>(), 3);
@@ -1279,7 +1279,7 @@ TEST_F(Meta, MetaDataSetterGetterAsFreeFunctions) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("setter_getter"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "x");
+    ASSERT_STREQ(data.name(), "x");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
@@ -1295,7 +1295,7 @@ TEST_F(Meta, MetaDataSetterGetterAsMemberFunctions) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("setter_getter"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "y");
+    ASSERT_STREQ(data.name(), "y");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
@@ -1311,7 +1311,7 @@ TEST_F(Meta, MetaDataSetterGetterWithRefAsMemberFunctions) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("setter_getter"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "w");
+    ASSERT_STREQ(data.name(), "w");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
@@ -1327,7 +1327,7 @@ TEST_F(Meta, MetaDataSetterGetterMixed) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("setter_getter"));
     ASSERT_EQ(data.type(), meta::resolve<int>());
-    ASSERT_EQ(data.name(), "z");
+    ASSERT_STREQ(data.name(), "z");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_EQ(data.get(instance).cast<int>(), 0);
@@ -1346,7 +1346,7 @@ TEST_F(Meta, MetaDataArrayStatic) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("array"));
     ASSERT_EQ(data.type(), meta::resolve<int[3]>());
-    ASSERT_EQ(data.name(), "global");
+    ASSERT_STREQ(data.name(), "global");
     ASSERT_FALSE(data.is_const());
     ASSERT_TRUE(data.is_static());
     ASSERT_TRUE(data.type().is_array());
@@ -1376,7 +1376,7 @@ TEST_F(Meta, MetaDataArray) {
     ASSERT_NE(data, meta::data{});
     ASSERT_EQ(data.parent(), meta::resolve("array"));
     ASSERT_EQ(data.type(), meta::resolve<int[3]>());
-    ASSERT_EQ(data.name(), "local");
+    ASSERT_STREQ(data.name(), "local");
     ASSERT_FALSE(data.is_const());
     ASSERT_FALSE(data.is_static());
     ASSERT_TRUE(data.type().is_array());
@@ -1424,7 +1424,7 @@ TEST_F(Meta, MetaFunc) {
     ASSERT_TRUE(func);
     ASSERT_NE(func, meta::func{});
     ASSERT_EQ(func.parent(), meta::resolve("func"));
-    ASSERT_EQ(func.name(), "f2");
+    ASSERT_STREQ(func.name(), "f2");
     ASSERT_EQ(func.size(), meta::func::size_type{2});
     ASSERT_FALSE(func.is_const());
     ASSERT_FALSE(func.is_static());
@@ -1463,7 +1463,7 @@ TEST_F(Meta, MetaFuncConst) {
 
     ASSERT_TRUE(func);
     ASSERT_EQ(func.parent(), meta::resolve("func"));
-    ASSERT_EQ(func.name(), "f1");
+    ASSERT_STREQ(func.name(), "f1");
     ASSERT_EQ(func.size(), meta::func::size_type{1});
     ASSERT_TRUE(func.is_const());
     ASSERT_FALSE(func.is_static());
@@ -1500,7 +1500,7 @@ TEST_F(Meta, MetaFuncRetVoid) {
 
     ASSERT_TRUE(func);
     ASSERT_EQ(func.parent(), meta::resolve("func"));
-    ASSERT_EQ(func.name(), "g");
+    ASSERT_STREQ(func.name(), "g");
     ASSERT_EQ(func.size(), meta::func::size_type{1});
     ASSERT_FALSE(func.is_const());
     ASSERT_FALSE(func.is_static());
@@ -1534,7 +1534,7 @@ TEST_F(Meta, MetaFuncStatic) {
 
     ASSERT_TRUE(func);
     ASSERT_EQ(func.parent(), meta::resolve("func"));
-    ASSERT_EQ(func.name(), "h");
+    ASSERT_STREQ(func.name(), "h");
     ASSERT_EQ(func.size(), meta::func::size_type{1});
     ASSERT_FALSE(func.is_const());
     ASSERT_TRUE(func.is_static());
@@ -1570,7 +1570,7 @@ TEST_F(Meta, MetaFuncStaticRetVoid) {
 
     ASSERT_TRUE(func);
     ASSERT_EQ(func.parent(), meta::resolve("func"));
-    ASSERT_EQ(func.name(), "k");
+    ASSERT_STREQ(func.name(), "k");
     ASSERT_EQ(func.size(), meta::func::size_type{1});
     ASSERT_FALSE(func.is_const());
     ASSERT_TRUE(func.is_static());
@@ -1651,7 +1651,7 @@ TEST_F(Meta, MetaType) {
 
     ASSERT_TRUE(type);
     ASSERT_NE(type, meta::type{});
-    ASSERT_EQ(type.name(), "derived");
+    ASSERT_STREQ(type.name(), "derived");
 
     type.prop([](auto prop) {
         ASSERT_TRUE(prop);
