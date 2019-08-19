@@ -9,6 +9,7 @@ image:
 
 environment:
   BUILD_DIR: "%APPVEYOR_BUILD_FOLDER%\\build"
+  CTEST_OUTPUT_ON_FAILURE: 1
 
 configuration:
   - Debug
