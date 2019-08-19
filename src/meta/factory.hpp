@@ -149,7 +149,7 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_
 
 template<typename Type, auto Data, typename Policy>
 any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
-    auto dispatch = []([[maybe_unused]] auto &&value) {
+    auto dispatch = [](auto &&value) {
         if constexpr(std::is_same_v<Policy, as_void_t>) {
             return any{std::in_place_type<void>};
         } else if constexpr(std::is_same_v<Policy, as_alias_t>) {
@@ -176,7 +176,7 @@ any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
             return clazz ? dispatch(std::invoke(Data, clazz)) : any{};
         }
     } else {
-        static_assert(std::is_pointer_v<decltype(Data)>);
+        static_assert(std::is_pointer_v<std::decay_t<decltype(Data)>>);
 
         if constexpr(std::is_array_v<std::remove_pointer_t<decltype(Data)>>) {
             auto *idx = index.try_cast<std::size_t>();
@@ -244,7 +244,7 @@ any invoke([[maybe_unused]] handle handle, any *args, std::index_sequence<Indexe
  */
 template<typename Type>
 class factory {
-    static_assert(std::is_object_v<Type> && !(std::is_const_v<Type> || std::is_volatile_v<Type>));
+    static_assert(std::is_same_v<Type, std::decay_t<Type>>);
 
     template<typename Node>
     bool duplicate(const std::size_t id, const Node *node) noexcept {
@@ -645,8 +645,8 @@ public:
             node.prop = properties<std::integral_constant<decltype(Data), Data>>(std::forward<Property>(property)...);
             curr = &node;
         } else {
-            static_assert(std::is_pointer_v<decltype(Data)>);
-            using data_type = std::remove_pointer_t<decltype(Data)>;
+            static_assert(std::is_pointer_v<std::decay_t<decltype(Data)>>);
+            using data_type = std::remove_pointer_t<std::decay_t<decltype(Data)>>;
 
             static internal::data_node node{
                 &internal::type_info<Type>::template data<Data>,
