@@ -320,9 +320,9 @@ class factory {
         }
     }
 
+public:
     factory() noexcept = default;
 
-public:
     /**
      * @brief Extends a meta type by assigning it an identifier and properties.
      * @tparam Property Types of properties to assign to the meta type.
