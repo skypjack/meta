@@ -321,7 +321,7 @@ class factory {
     }
 
 public:
-    /*! Default constructor. */
+    /*! @brief Default constructor. */
     factory() noexcept = default;
 
     /**
