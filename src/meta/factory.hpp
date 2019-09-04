@@ -153,7 +153,7 @@ any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
         if constexpr(std::is_same_v<Policy, as_void_t>) {
             return any{std::in_place_type<void>};
         } else if constexpr(std::is_same_v<Policy, as_alias_t>) {
-            return any{as_alias, std::forward<decltype(value)>(value)};
+            return any{std::ref(std::forward<decltype(value)>(value))};
         } else {
             static_assert(std::is_same_v<Policy, as_is_t>);
             return any{std::forward<decltype(value)>(value)};
@@ -197,7 +197,7 @@ any invoke([[maybe_unused]] handle handle, any *args, std::index_sequence<Indexe
             std::invoke(Candidate, *args...);
             return any{std::in_place_type<void>};
         } else if constexpr(std::is_same_v<Policy, as_alias_t>) {
-            return any{as_alias, std::invoke(Candidate, *args...)};
+            return any{std::ref(std::invoke(Candidate, *args...))};
         } else {
             static_assert(std::is_same_v<Policy, as_is_t>);
             return any{std::invoke(Candidate, *args...)};

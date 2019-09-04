@@ -1,4 +1,5 @@
 #include <utility>
+#include <functional>
 #include <type_traits>
 #include <gtest/gtest.h>
 #include <meta/factory.hpp>
@@ -305,7 +306,7 @@ TEST_F(Meta, MetaAnySBOInPlaceTypeConstruction) {
 TEST_F(Meta, MetaAnySBOAsAliasConstruction) {
     int value = 3;
     int other = 42;
-    meta::any any{meta::as_alias, value};
+    meta::any any{std::ref(value)};
 
     ASSERT_TRUE(any);
     ASSERT_FALSE(any.try_cast<std::size_t>());
@@ -314,8 +315,8 @@ TEST_F(Meta, MetaAnySBOAsAliasConstruction) {
     ASSERT_EQ(std::as_const(any).cast<int>(), 3);
     ASSERT_NE(any.data(), nullptr);
     ASSERT_NE(std::as_const(any).data(), nullptr);
-    ASSERT_EQ(any, (meta::any{meta::as_alias, value}));
-    ASSERT_NE(any, (meta::any{meta::as_alias, other}));
+    ASSERT_EQ(any, (meta::any{std::ref(value)}));
+    ASSERT_NE(any, (meta::any{std::ref(other)}));
     ASSERT_NE(any, meta::any{42});
     ASSERT_EQ(meta::any{3}, any);
 }
@@ -412,7 +413,7 @@ TEST_F(Meta, MetaAnyNoSBOInPlaceTypeConstruction) {
 TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction) {
     int value = 3;
     fat_type instance{&value};
-    meta::any any{meta::as_alias, instance};
+    meta::any any{std::ref(instance)};
 
     ASSERT_TRUE(any);
     ASSERT_FALSE(any.try_cast<std::size_t>());
@@ -421,7 +422,7 @@ TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction) {
     ASSERT_EQ(std::as_const(any).cast<fat_type>(), instance);
     ASSERT_NE(any.data(), nullptr);
     ASSERT_NE(std::as_const(any).data(), nullptr);
-    ASSERT_EQ(any, (meta::any{meta::as_alias, instance}));
+    ASSERT_EQ(any, (meta::any{std::ref(instance)}));
     ASSERT_EQ(any, meta::any{instance});
     ASSERT_NE(meta::any{fat_type{}}, any);
 }

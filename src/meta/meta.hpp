@@ -11,7 +11,6 @@
 #include <utility>
 #include <functional>
 #include <type_traits>
-#include "policy.hpp"
 
 
 namespace meta {
@@ -421,11 +420,11 @@ public:
      * @param type An instance of an object to use to initialize the container.
      */
     template<typename Type>
-    explicit any(as_alias_t, Type &type)
+    explicit any(std::reference_wrapper<Type> type)
         : any{}
     {
         node = internal::type_info<Type>::resolve();
-        instance = &type;
+        instance = &type.get();
 
         compare_fn = [](const void *lhs, const void *rhs) {
             return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
