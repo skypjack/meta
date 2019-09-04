@@ -623,7 +623,7 @@ public:
      * otherwise.
      */
     bool operator==(const any &other) const noexcept {
-        return node == other.node && node->compare(instance, other.instance);
+        return node == other.node && (!node || node->compare(instance, other.instance));
     }
 
     /**
