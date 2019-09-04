@@ -643,7 +643,7 @@ public:
      * otherwise.
      */
     bool operator==(const any &other) const noexcept {
-        return node == other.node && ((!compare_fn && !other.compare_fn) || compare_fn(instance, other.instance));
+        return node == other.node && (!compare_fn || compare_fn(instance, other.instance));
     }
 
     /**
