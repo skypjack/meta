@@ -2094,6 +2094,11 @@ inline type_node * info_node<Type>::resolve() noexcept {
                 {
                     return true;
                 }
+                else if constexpr (std::is_function_v<Type>)
+                {
+                    // functions only compare equal with themselves
+                    return lhs == rhs;
+                }
                 else
                 {
                     // extra parens to prevent ADL, just in case
