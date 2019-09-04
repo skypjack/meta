@@ -126,6 +126,7 @@ struct func_node {
 
 struct type_node {
     using size_type = std::size_t;
+    using compare_fn_type = bool(const void*, const void*) noexcept;
     const char *name;
     std::size_t id;
     type_node * next;
@@ -144,6 +145,7 @@ struct type_node {
     const size_type extent;
     type(* const remove_pointer)() noexcept;
     type(* const clazz)() noexcept;
+    compare_fn_type *compare{nullptr};
     base_node *base{nullptr};
     conv_node *conv{nullptr};
     ctor_node *ctor{nullptr};
@@ -306,7 +308,6 @@ class any {
     friend struct handle;
 
     using storage_type = std::aligned_storage_t<sizeof(void *), alignof(void *)>;
-    using compare_fn_type = bool(const void *, const void *);
     using copy_fn_type = void *(storage_type &, const void *);
     using destroy_fn_type = void(void *);
     using steal_fn_type = void *(storage_type &, void *, destroy_fn_type *);
@@ -367,17 +368,6 @@ class any {
         }
     };
 
-    template<typename Type>
-    static auto compare(int, const Type &lhs, const Type &rhs)
-    -> decltype(lhs == rhs, bool{}) {
-        return lhs == rhs;
-    }
-
-    template<typename Type>
-    static bool compare(char, const Type &lhs, const Type &rhs) {
-        return &lhs == &rhs;
-    }
-
 public:
     /*! @brief Default constructor. */
     any() noexcept
@@ -385,7 +375,6 @@ public:
           instance{nullptr},
           node{nullptr},
           destroy_fn{nullptr},
-          compare_fn{nullptr},
           copy_fn{nullptr},
           steal_fn{nullptr}
     {}
@@ -408,10 +397,6 @@ public:
             destroy_fn = &traits_type::destroy;
             copy_fn = &traits_type::copy;
             steal_fn = &traits_type::steal;
-
-            compare_fn = [](const void *lhs, const void *rhs) {
-                return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
-            };
         }
     }
 
@@ -426,10 +411,6 @@ public:
     {
         node = internal::type_info<Type>::resolve();
         instance = &type;
-
-        compare_fn = [](const void *lhs, const void *rhs) {
-            return compare(0, *static_cast<const Type *>(lhs), *static_cast<const Type *>(rhs));
-        };
     }
 
     /**
@@ -452,7 +433,6 @@ public:
         node = other.node;
         instance = other.copy_fn ? other.copy_fn(storage, other.instance) : other.instance;
         destroy_fn = other.destroy_fn;
-        compare_fn = other.compare_fn;
         copy_fn = other.copy_fn;
         steal_fn = other.steal_fn;
     }
@@ -643,7 +623,7 @@ public:
      * otherwise.
      */
     bool operator==(const any &other) const noexcept {
-        return node == other.node && ((!compare_fn && !other.compare_fn) || compare_fn(instance, other.instance));
+        return node == other.node && (!node->compare || (node->compare)(instance, other.instance));
     }
 
     /**
@@ -669,7 +649,6 @@ public:
 
         std::swap(lhs.node, rhs.node);
         std::swap(lhs.destroy_fn, rhs.destroy_fn);
-        std::swap(lhs.compare_fn, rhs.compare_fn);
         std::swap(lhs.copy_fn, rhs.copy_fn);
         std::swap(lhs.steal_fn, rhs.steal_fn);
     }
@@ -679,7 +658,6 @@ private:
     void *instance;
     internal::type_node *node;
     destroy_fn_type *destroy_fn;
-    compare_fn_type *compare_fn;
     copy_fn_type *copy_fn;
     steal_fn_type *steal_fn;
 };
@@ -2074,6 +2052,16 @@ inline meta::type func::arg(size_type index) const noexcept {
 
 namespace internal {
 
+template<typename Type>
+static auto compare(int, const Type& lhs, const Type& rhs) noexcept
+    -> decltype(lhs == rhs, bool {}) {
+    return lhs == rhs;
+}
+
+template<typename Type>
+static bool compare(char, const Type& lhs, const Type& rhs) noexcept {
+    return &lhs == &rhs;
+}
 
 template<typename Type>
 inline type_node * info_node<Type>::resolve() noexcept {
@@ -2100,6 +2088,9 @@ inline type_node * info_node<Type>::resolve() noexcept {
             },
             []() noexcept -> meta::type {
                 return &node;
+            },
+            [](const void* lhs, const void* rhs) noexcept {
+                return compare(0, *static_cast<const Type*>(lhs), *static_cast<const Type*>(rhs));
             }
         };
 
