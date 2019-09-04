@@ -623,7 +623,7 @@ public:
      * otherwise.
      */
     bool operator==(const any &other) const noexcept {
-        return node == other.node && (!node->compare || (node->compare)(instance, other.instance));
+        return node == other.node && node->compare(instance, other.instance);
     }
 
     /**
@@ -2090,7 +2090,15 @@ inline type_node * info_node<Type>::resolve() noexcept {
                 return &node;
             },
             [](const void* lhs, const void* rhs) noexcept {
-                return compare(0, *static_cast<const Type*>(lhs), *static_cast<const Type*>(rhs));
+                if constexpr (std::is_void_v<Type>)
+                {
+                    return true;
+                }
+                else
+                {
+                    // extra parens to prevent ADL, just in case
+                    return (compare)(0, *static_cast<const Type*>(lhs), *static_cast<const Type*>(rhs));
+                }
             }
         };
 
