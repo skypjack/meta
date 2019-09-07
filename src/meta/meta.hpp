@@ -4,13 +4,11 @@
 
 #include <array>
 #include <memory>
-#include <string>
-#include <cassert>
 #include <cstring>
 #include <cstddef>
 #include <utility>
-#include <functional>
 #include <type_traits>
+#include <cassert>
 
 
 namespace meta {
@@ -91,8 +89,7 @@ struct dtor_node {
 
 struct data_node {
     data_node ** const underlying;
-    const char *name;
-    std::size_t id;
+    std::size_t identifier;
     type_node * const parent;
     data_node * next;
     prop_node * prop;
@@ -108,8 +105,7 @@ struct data_node {
 struct func_node {
     using size_type = std::size_t;
     func_node ** const underlying;
-    const char *name;
-    std::size_t id;
+    std::size_t identifier;
     type_node * const parent;
     func_node * next;
     prop_node * prop;
@@ -125,8 +121,7 @@ struct func_node {
 
 struct type_node {
     using size_type = std::size_t;
-    const char *name;
-    std::size_t id;
+    std::size_t identifier;
     type_node * next;
     prop_node * prop;
     const bool is_void;
@@ -1226,14 +1221,6 @@ public:
     {}
 
     /**
-     * @brief Returns the name assigned to a given meta data.
-     * @return The name assigned to the meta data.
-     */
-    const char * name() const noexcept {
-        return node->name;
-    }
-
-    /**
      * @brief Returns the meta type to which a meta data belongs.
      * @return The meta type to which the meta data belongs.
      */
@@ -1420,14 +1407,6 @@ public:
     {}
 
     /**
-     * @brief Returns the name assigned to a given meta function.
-     * @return The name assigned to the meta function.
-     */
-    const char * name() const noexcept {
-        return node->name;
-    }
-
-    /**
      * @brief Returns the meta type to which a meta function belongs.
      * @return The meta type to which the meta function belongs.
      */
@@ -1588,14 +1567,6 @@ public:
     {}
 
     /**
-     * @brief Returns the name assigned to a given meta type.
-     * @return The name assigned to the meta type.
-     */
-    const char * name() const noexcept {
-        return node->name;
-    }
-
-    /**
      * @brief Indicates whether a given meta type refers to void or not.
      * @return True if the underlying type is void, false otherwise.
      */
@@ -1732,12 +1703,12 @@ public:
      *
      * Searches recursively among **all** the base classes of the given type.
      *
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @return The meta base associated with the given identifier, if any.
      */
-    meta::base base(const char *name) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::base>([id = std::hash<std::string>{}(name)](auto *candidate) {
-            return candidate->ref()->id == id;
+    meta::base base(const std::size_t identifier) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::base>([identifier](auto *candidate) {
+            return candidate->ref()->identifier == identifier;
         }, node);
 
         return curr ? curr->clazz() : meta::base{};
@@ -1833,12 +1804,12 @@ public:
      * means that the meta data of the base classes will also be inspected, if
      * any.
      *
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @return The meta data associated with the given identifier, if any.
      */
-    meta::data data(const char *name) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::data>([id = std::hash<std::string>{}(name)](auto *candidate) {
-            return candidate->id == id;
+    meta::data data(const std::size_t identifier) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::data>([identifier](auto *candidate) {
+            return candidate->identifier == identifier;
         }, node);
 
         return curr ? curr->clazz() : meta::data{};
@@ -1869,12 +1840,12 @@ public:
      * This means that the meta functions of the base classes will also be
      * inspected, if any.
      *
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @return The meta function associated with the given identifier, if any.
      */
-    meta::func func(const char *name) const noexcept {
-        const auto *curr = internal::find_if<&internal::type_node::func>([id = std::hash<std::string>{}(name)](auto *candidate) {
-            return candidate->id == id;
+    meta::func func(const std::size_t identifier) const noexcept {
+        const auto *curr = internal::find_if<&internal::type_node::func>([identifier](auto *candidate) {
+            return candidate->identifier == identifier;
         }, node);
 
         return curr ? curr->clazz() : meta::func{};
@@ -2078,7 +2049,6 @@ template<typename Type>
 inline type_node * info_node<Type>::resolve() noexcept {
     if(!type) {
         static type_node node{
-            {},
             {},
             nullptr,
             nullptr,

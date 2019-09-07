@@ -247,12 +247,12 @@ class factory {
     static_assert(std::is_same_v<Type, std::decay_t<Type>>);
 
     template<typename Node>
-    bool duplicate(const std::size_t id, const Node *node) noexcept {
-        return node ? node->id == id || duplicate(id, node->next) : false;
+    bool duplicate(const std::size_t identifier, const Node *node) noexcept {
+        return node && (node->identifier == identifier || duplicate(identifier, node->next));
     }
 
     bool duplicate(const any &key, const internal::prop_node *node) noexcept {
-        return node ? node->key() == key || duplicate(key, node->next) : false;
+        return node && (node->key() == key || duplicate(key, node->next));
     }
 
     template<typename>
@@ -327,19 +327,18 @@ public:
     /**
      * @brief Extends a meta type by assigning it an identifier and properties.
      * @tparam Property Types of properties to assign to the meta type.
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @param property Properties to assign to the meta type.
      * @return A meta factory for the parent type.
      */
     template<typename... Property>
-    factory type(const char *name, Property &&... property) noexcept {
+    factory type(const std::size_t identifier, Property &&... property) noexcept {
         assert(!internal::type_info<Type>::type);
         auto *node = internal::type_info<Type>::resolve();
-        node->name = name;
-        node->id = std::hash<std::string>{}(name);;
+        node->identifier = identifier;
         node->next = internal::type_info<>::type;
         node->prop = properties<Type>(std::forward<Property>(property)...);
-        assert(!duplicate(node->id, node->next));
+        assert(!duplicate(node->identifier, node->next));
         internal::type_info<Type>::type = node;
         internal::type_info<>::type = node;
 
@@ -564,9 +563,13 @@ public:
             &internal::type_info<Type>::template dtor<Func>,
             type,
             [](handle handle) {
-                return handle.type() == internal::type_info<Type>::resolve()->clazz()
-                        ? (std::invoke(Func, *handle.data<Type>()), true)
-                        : false;
+                const auto valid = (handle.type() == internal::type_info<Type>::resolve()->clazz());
+
+                if(valid) {
+                    std::invoke(Func, *handle.data<Type>());
+                }
+
+                return valid;
             },
             []() noexcept -> meta::dtor {
                 return &node;
@@ -592,12 +595,12 @@ public:
      * @tparam Data The actual variable to attach to the meta type.
      * @tparam Policy Optional policy (no policy set by default).
      * @tparam Property Types of properties to assign to the meta data.
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @param property Properties to assign to the meta data.
      * @return A meta factory for the parent type.
      */
     template<auto Data, typename Policy = as_is_t, typename... Property>
-    factory data(const char *name, Property &&... property) noexcept {
+    factory data(const std::size_t identifier, Property &&... property) noexcept {
         auto * const type = internal::type_info<Type>::resolve();
         internal::data_node *curr = nullptr;
 
@@ -606,7 +609,6 @@ public:
 
             static internal::data_node node{
                 &internal::type_info<Type>::template data<Data>,
-                nullptr,
                 {},
                 type,
                 nullptr,
@@ -628,7 +630,6 @@ public:
 
             static internal::data_node node{
                 &internal::type_info<Type>::template data<Data>,
-                nullptr,
                 {},
                 type,
                 nullptr,
@@ -651,7 +652,6 @@ public:
 
             static internal::data_node node{
                 &internal::type_info<Type>::template data<Data>,
-                nullptr,
                 {},
                 type,
                 nullptr,
@@ -670,10 +670,9 @@ public:
             curr = &node;
         }
 
-        curr->name = name;
-        curr->id = std::hash<std::string>{}(name);
+        curr->identifier = identifier;
         curr->next = type->data;
-        assert(!duplicate(curr->id, curr->next));
+        assert(!duplicate(curr->identifier, curr->next));
         assert((!internal::type_info<Type>::template data<Data>));
         internal::type_info<Type>::template data<Data> = curr;
         type->data = curr;
@@ -699,12 +698,12 @@ public:
      * @tparam Getter The actual function to use as a getter.
      * @tparam Policy Optional policy (no policy set by default).
      * @tparam Property Types of properties to assign to the meta data.
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @param property Properties to assign to the meta data.
      * @return A meta factory for the parent type.
      */
     template<auto Setter, auto Getter, typename Policy = as_is_t, typename... Property>
-    factory data(const char *name, Property &&... property) noexcept {
+    factory data(const std::size_t identifier, Property &&... property) noexcept {
         using owner_type = std::tuple<std::integral_constant<decltype(Setter), Setter>, std::integral_constant<decltype(Getter), Getter>>;
         using underlying_type = std::invoke_result_t<decltype(Getter), Type &>;
         static_assert(std::is_invocable_v<decltype(Setter), Type &, underlying_type>);
@@ -712,7 +711,6 @@ public:
 
         static internal::data_node node{
             &internal::type_info<Type>::template data<Setter, Getter>,
-            nullptr,
             {},
             type,
             nullptr,
@@ -727,11 +725,10 @@ public:
             }
         };
 
-        node.name = name;
-        node.id = std::hash<std::string>{}(name);
+        node.identifier = identifier;
         node.next = type->data;
         node.prop = properties<owner_type>(std::forward<Property>(property)...);
-        assert(!duplicate(node.id, node.next));
+        assert(!duplicate(node.identifier, node.next));
         assert((!internal::type_info<Type>::template data<Setter, Getter>));
         internal::type_info<Type>::template data<Setter, Getter> = &node;
         type->data = &node;
@@ -750,19 +747,18 @@ public:
      * @tparam Candidate The actual function to attach to the meta type.
      * @tparam Policy Optional policy (no policy set by default).
      * @tparam Property Types of properties to assign to the meta function.
-     * @param name Unique identifier.
+     * @param identifier Unique identifier.
      * @param property Properties to assign to the meta function.
      * @return A meta factory for the parent type.
      */
     template<auto Candidate, typename Policy = as_is_t, typename... Property>
-    factory func(const char *name, Property &&... property) noexcept {
+    factory func(const std::size_t identifier, Property &&... property) noexcept {
         using owner_type = std::integral_constant<decltype(Candidate), Candidate>;
         using helper_type = internal::function_helper_t<decltype(Candidate)>;
         auto * const type = internal::type_info<Type>::resolve();
 
         static internal::func_node node{
             &internal::type_info<Type>::template func<Candidate>,
-            nullptr,
             {},
             type,
             nullptr,
@@ -780,11 +776,10 @@ public:
             }
         };
 
-        node.name = name;
-        node.id = std::hash<std::string>{}(name);
+        node.identifier = identifier;
         node.next = type->func;
         node.prop = properties<owner_type>(std::forward<Property>(property)...);
-        assert(!duplicate(node.id, node.next));
+        assert(!duplicate(node.identifier, node.next));
         assert((!internal::type_info<Type>::template func<Candidate>));
         internal::type_info<Type>::template func<Candidate> = &node;
         type->func = &node;
@@ -827,7 +822,7 @@ public:
             unregister_all<&internal::type_node::func>(0);
             unregister_dtor();
 
-            internal::type_info<Type>::type->name = nullptr;
+            internal::type_info<Type>::type->identifier = {};
             internal::type_info<Type>::type->next = nullptr;
             internal::type_info<Type>::type = nullptr;
         }
@@ -847,13 +842,13 @@ public:
  *
  * @tparam Type Type to reflect.
  * @tparam Property Types of properties to assign to the reflected type.
- * @param name Unique identifier.
+ * @param identifier Unique identifier.
  * @param property Properties to assign to the reflected type.
  * @return A meta factory for the given type.
  */
 template<typename Type, typename... Property>
-inline factory<Type> reflect(const char *name, Property &&... property) noexcept {
-    return factory<Type>{}.type(name, std::forward<Property>(property)...);
+inline factory<Type> reflect(const std::size_t identifier, Property &&... property) noexcept {
+    return factory<Type>{}.type(identifier, std::forward<Property>(property)...);
 }
 
 
@@ -905,12 +900,12 @@ inline type resolve() noexcept {
 
 /**
  * @brief Returns the meta type associated with a given identifier.
- * @param name Unique identifier.
+ * @param identifier Unique identifier.
  * @return The meta type associated with the given identifier, if any.
  */
-inline type resolve(const char *name) noexcept {
-    const auto *curr = internal::find_if([id = std::hash<std::string>{}(name)](auto *node) {
-        return node->id == id;
+inline type resolve(const std::size_t identifier) noexcept {
+    const auto *curr = internal::find_if([identifier](auto *node) {
+        return node->identifier == identifier;
     }, internal::type_info<>::type);
 
     return curr ? curr->clazz() : type{};
