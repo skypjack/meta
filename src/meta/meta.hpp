@@ -15,7 +15,7 @@ namespace meta {
 
 
 class any;
-struct handle;
+class handle;
 class prop;
 class base;
 class conv;
@@ -298,7 +298,7 @@ inline auto ctor(std::index_sequence<Indexes...>, const type_node *node) noexcep
  */
 class any {
     /*! @brief A meta handle is allowed to _inherit_ from a meta any. */
-    friend struct handle;
+    friend class handle;
 
     using storage_type = std::aligned_storage_t<sizeof(void *), alignof(void *)>;
     using copy_fn_type = void *(storage_type &, const void *);
@@ -405,6 +405,12 @@ public:
         node = internal::type_info<Type>::resolve();
         instance = &type.get();
     }
+
+    /**
+     * @brief Constructs a meta any from a meta handle object.
+     * @param handle A reference to an object to use to initialize the meta any.
+     */
+    inline any(handle handle) noexcept;
 
     /**
      * @brief Constructs a meta any from a given value.
@@ -649,7 +655,7 @@ public:
 private:
     storage_type storage;
     void *instance;
-    internal::type_node *node;
+    const internal::type_node *node;
     destroy_fn_type *destroy_fn;
     copy_fn_type *copy_fn;
     steal_fn_type *steal_fn;
@@ -666,7 +672,11 @@ private:
  * responsible for ensuring that the target object remains alive for the entire
  * interval of use of the handle.
  */
-struct handle {
+class handle {
+    /*! @brief A meta any is allowed to _inherit_ from a meta handle. */
+    friend class any;
+
+public:
     /*! @brief Default constructor. */
     handle() noexcept
         : node{nullptr},
@@ -718,14 +728,14 @@ struct handle {
      * @return A (possibly null) pointer to the underlying object.
      */
     template<typename Type>
-    const Type * data() const noexcept {
+    const Type * try_cast() const noexcept {
         return internal::try_cast<Type>(node, instance);
     }
 
     /*! @copydoc data */
     template<typename Type>
-    Type * data() noexcept {
-        return const_cast<Type *>(std::as_const(*this).data<Type>());
+    Type * try_cast() noexcept {
+        return const_cast<Type *>(std::as_const(*this).try_cast<Type>());
     }
 
     /**
@@ -1941,6 +1951,14 @@ private:
  */
 inline bool operator!=(const type &lhs, const type &rhs) noexcept {
     return !(lhs == rhs);
+}
+
+
+inline any::any(handle handle) noexcept
+    : any{}
+{
+    node = handle.node;
+    instance = handle.instance;
 }
 
 
