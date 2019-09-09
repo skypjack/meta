@@ -90,8 +90,8 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_
             using helper_type = function_helper_t<decltype(Data)>;
             using data_type = std::tuple_element_t<!std::is_member_function_pointer_v<decltype(Data)>, typename helper_type::args_type>;
             static_assert(std::is_invocable_v<decltype(Data), Type &, data_type>);
+            auto *clazz = any{handle}.try_cast<Type>();
             auto *direct = value.try_cast<data_type>();
-            auto *clazz = handle.try_cast<Type>();
 
             if(clazz && (direct || value.convert<data_type>())) {
                 std::invoke(Data, *clazz, direct ? *direct : value.cast<data_type>());
@@ -100,7 +100,7 @@ bool setter([[maybe_unused]] handle handle, [[maybe_unused]] any index, [[maybe_
         } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
             using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
             static_assert(std::is_invocable_v<decltype(Data), Type *>);
-            auto *clazz = handle.try_cast<Type>();
+            auto *clazz = any{handle}.try_cast<Type>();
 
             if constexpr(std::is_array_v<data_type>) {
                 using underlying_type = std::remove_extent_t<data_type>;
@@ -162,12 +162,12 @@ any getter([[maybe_unused]] handle handle, [[maybe_unused]] any index) {
 
     if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Data)>> || std::is_member_function_pointer_v<decltype(Data)>) {
         static_assert(std::is_invocable_v<decltype(Data), Type &>);
-        auto *clazz = handle.try_cast<Type>();
+        auto *clazz = any{handle}.try_cast<Type>();
         return clazz ? dispatch(std::invoke(Data, *clazz)) : any{};
     } else if constexpr(std::is_member_object_pointer_v<decltype(Data)>) {
         using data_type = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<Type>().*Data)>>;
         static_assert(std::is_invocable_v<decltype(Data), Type *>);
-        auto *clazz = handle.try_cast<Type>();
+        auto *clazz = any{handle}.try_cast<Type>();
 
         if constexpr(std::is_array_v<data_type>) {
             auto *idx = index.try_cast<std::size_t>();
@@ -217,7 +217,7 @@ any invoke([[maybe_unused]] handle handle, any *args, std::index_sequence<Indexe
     if constexpr(std::is_function_v<std::remove_pointer_t<decltype(Candidate)>>) {
         return (std::get<Indexes>(direct) && ...) ? dispatch(std::get<Indexes>(direct)...) : any{};
     } else {
-        auto *clazz = handle.try_cast<Type>();
+        auto *clazz = any{handle}.try_cast<Type>();
         return (clazz && (std::get<Indexes>(direct) && ...)) ? dispatch(clazz, std::get<Indexes>(direct)...) : any{};
     }
 }
@@ -564,7 +564,7 @@ public:
                 const auto valid = (handle.type() == internal::type_info<Type>::resolve()->clazz());
 
                 if(valid) {
-                    std::invoke(Func, *handle.try_cast<Type>());
+                    std::invoke(Func, *any{handle}.try_cast<Type>());
                 }
 
                 return valid;

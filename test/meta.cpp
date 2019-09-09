@@ -868,11 +868,8 @@ TEST_F(Meta, MetaHandleFromObject) {
 
     ASSERT_TRUE(handle);
     ASSERT_EQ(handle.type(), meta::resolve<empty_type>());
-    ASSERT_EQ(handle.try_cast<std::size_t>(), nullptr);
-    ASSERT_EQ(handle.try_cast<empty_type>(), &empty);
-    ASSERT_EQ(std::as_const(handle).try_cast<empty_type>(), &empty);
-    ASSERT_EQ(handle.data(), &empty);
     ASSERT_EQ(std::as_const(handle).data(), &empty);
+    ASSERT_EQ(handle.data(), &empty);
 }
 
 TEST_F(Meta, MetaHandleFromMetaAny) {
@@ -881,11 +878,8 @@ TEST_F(Meta, MetaHandleFromMetaAny) {
 
     ASSERT_TRUE(handle);
     ASSERT_EQ(handle.type(), meta::resolve<int>());
-    ASSERT_EQ(handle.try_cast<std::size_t>(), nullptr);
-    ASSERT_EQ(handle.try_cast<int>(), any.data());
-    ASSERT_EQ(std::as_const(handle).try_cast<int>(), any.data());
-    ASSERT_EQ(handle.data(), any.data());
     ASSERT_EQ(std::as_const(handle).data(), any.data());
+    ASSERT_EQ(handle.data(), any.data());
 }
 
 TEST_F(Meta, MetaHandleEmpty) {
@@ -893,23 +887,8 @@ TEST_F(Meta, MetaHandleEmpty) {
 
     ASSERT_FALSE(handle);
     ASSERT_FALSE(handle.type());
-    ASSERT_EQ(handle.try_cast<std::size_t>(), nullptr);
-    ASSERT_EQ(handle.try_cast<empty_type>(), nullptr);
-    ASSERT_EQ(handle.data(), nullptr);
     ASSERT_EQ(std::as_const(handle).data(), nullptr);
-}
-
-TEST_F(Meta, MetaHandleTryCast) {
-    derived_type derived{};
-    meta::handle handle{derived};
-
-    ASSERT_TRUE(handle);
-    ASSERT_EQ(handle.type(), meta::resolve<derived_type>());
-    ASSERT_EQ(handle.try_cast<void>(), nullptr);
-    ASSERT_NE(handle.try_cast<base_type>(), nullptr);
-    ASSERT_EQ(handle.try_cast<derived_type>(), handle.data());
-    ASSERT_EQ(std::as_const(handle).try_cast<base_type>(), handle.try_cast<base_type>());
-    ASSERT_EQ(std::as_const(handle).try_cast<derived_type>(), handle.data());
+    ASSERT_EQ(handle.data(), nullptr);
 }
 
 TEST_F(Meta, MetaProp) {
