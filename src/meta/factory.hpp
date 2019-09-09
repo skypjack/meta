@@ -244,8 +244,6 @@ any invoke([[maybe_unused]] handle handle, any *args, std::index_sequence<Indexe
  */
 template<typename Type>
 class factory {
-    static_assert(std::is_same_v<Type, std::decay_t<Type>>);
-
     template<typename Node>
     bool duplicate(const std::size_t identifier, const Node *node) noexcept {
         return node && (node->identifier == identifier || duplicate(identifier, node->next));
