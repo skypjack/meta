@@ -1441,7 +1441,8 @@ public:
      */
     template<typename... Args>
     any invoke(handle handle, Args &&... args) const {
-        std::array<any, sizeof...(Args)> arguments{{std::forward<Args>(args)...}};
+        // makes aliasing on the values and passes forward references if any
+        std::array<any, sizeof...(Args)> arguments{{meta::handle{args}...}};
         any any{};
 
         if(sizeof...(Args) == size()) {
