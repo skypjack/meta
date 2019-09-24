@@ -207,12 +207,14 @@ endif()
 # AOB
 #
 
+FILE(GLOB GH_WORKFLOWS .github/workflows/*.yml)
+
 add_custom_target(
     meta_aob
     SOURCES
-        appveyor.yml
+        ${GH_WORKFLOWS}
+        .github/FUNDING.yml
         AUTHORS
         LICENSE
         README.md
-        .travis.yml
 )

@@ -3,20 +3,25 @@
 <!--
 @cond TURN_OFF_DOXYGEN
 -->
-[![GitHub version](https://badge.fury.io/gh/skypjack%2Fmeta.svg)](http://badge.fury.io/gh/skypjack%2Fmeta)
-[![LoC](https://tokei.rs/b1/github/skypjack/meta)](https://github.com/skypjack/meta)
-[![Build Status](https://travis-ci.org/skypjack/meta.svg?branch=master)](https://travis-ci.org/skypjack/meta)
-[![Build status](https://ci.appveyor.com/api/projects/status/xs3bos4xl06y0wyv?svg=true)](https://ci.appveyor.com/project/skypjack/meta)
-[![Coverage Status](https://coveralls.io/repos/github/skypjack/meta/badge.svg?branch=master)](https://coveralls.io/github/skypjack/meta?branch=master)
+[![GitHub version](https://badge.fury.io/gh/skypjack%2Fmeta.svg)](https://github.com/skypjack/meta/releases)
+[![Build Status](https://github.com/skypjack/meta/workflows/build/badge.svg)](https://github.com/skypjack/meta/actions)
+[![Coverage Status](https://codecov.io/gh/skypjack/meta/branch/master/graph/badge.svg)](https://codecov.io/gh/skypjack/meta)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/skypjack)
-
-[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bePatron?c=1772573)
+[![Patreon](https://img.shields.io/badge/become-patron-red.svg)](https://www.patreon.com/bePatron?c=1772573)
 
 > The reflection system was born within [EnTT](https://github.com/skypjack/entt)
 > and is developed and enriched there. This project is designed for those who
 > are interested only in a header-only, full-featured, non-intrusive and macro
 > free reflection system which certainly deserves to be treated also separately
 > due to its quality and its rather peculiar features.
+
+If you use `meta` and you want to say thanks or support the project, please
+**consider becoming a patron**:
+
+[![Patreon](https://c5.patreon.com/external/logo/become_a_patron_button.png)](https://www.patreon.com/bePatron?c=1772573)
+
+[Many thanks](https://skypjack.github.io/patreon/) to those who supported me and
+still support me today.
 
 # Table of Contents
 
