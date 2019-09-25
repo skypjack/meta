@@ -5,7 +5,7 @@
 -->
 [![GitHub version](https://badge.fury.io/gh/skypjack%2Fmeta.svg)](https://github.com/skypjack/meta/releases)
 [![Build Status](https://github.com/skypjack/meta/workflows/build/badge.svg)](https://github.com/skypjack/meta/actions)
-[![Coverage Status](https://codecov.io/gh/skypjack/meta/branch/master/graph/badge.svg)](https://codecov.io/gh/skypjack/meta)
+[![Coverage Status](https://coveralls.io/repos/github/skypjack/meta/badge.svg?branch=master)](https://coveralls.io/github/skypjack/meta?branch=master)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/skypjack)
 [![Patreon](https://img.shields.io/badge/become-patron-red.svg)](https://www.patreon.com/bePatron?c=1772573)
 
