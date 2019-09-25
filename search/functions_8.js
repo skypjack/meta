@@ -6,7 +6,7 @@ var searchData=
   ['is_5fconst',['is_const',['../classmeta_1_1data.html#aa7c9a3e3ba3bf8e66bdd794b7687325d',1,'meta::data::is_const()'],['../classmeta_1_1func.html#abe46befa5e062f13a38f6f952b2999a7',1,'meta::func::is_const()']]],
   ['is_5fenum',['is_enum',['../classmeta_1_1type.html#a3bcd780239e1195a71a9a5060cf2f0d8',1,'meta::type']]],
   ['is_5ffloating_5fpoint',['is_floating_point',['../classmeta_1_1type.html#a8c059456fb1a9126152ec292f8a491da',1,'meta::type']]],
-  ['is_5ffunction',['is_function',['../classmeta_1_1type.html#a191e5aa5c5ad5ee5615b50cf0d8673d2',1,'meta::type']]],
+  ['is_5ffunction_5fpointer',['is_function_pointer',['../classmeta_1_1type.html#a43048cddb588f91983779aa36717f0a6',1,'meta::type']]],
   ['is_5fintegral',['is_integral',['../classmeta_1_1type.html#ac50946e8f0212c9bed177565672eb4d5',1,'meta::type']]],
   ['is_5fmember_5ffunction_5fpointer',['is_member_function_pointer',['../classmeta_1_1type.html#ae77a6f54c4707dfda8eaae932f929b09',1,'meta::type']]],
   ['is_5fmember_5fobject_5fpointer',['is_member_object_pointer',['../classmeta_1_1type.html#a723f66e8aa89a4ab7631763fdcf45301',1,'meta::type']]],
