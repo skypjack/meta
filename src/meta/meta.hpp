@@ -238,24 +238,20 @@ auto find_if(Op op, const type_node *node) noexcept
 
 template<typename Type>
 const Type * try_cast(const type_node *node, void *instance) noexcept {
-    if constexpr (std::is_same_v<Type, meta::any>)
-        return reinterpret_cast<const meta::any *>(instance);
-    else {
-        const auto *type = type_info<Type>::resolve();
-        void *ret = nullptr;
+    const auto *type = type_info<Type>::resolve();
+    void *ret = nullptr;
 
-        if(node == type) {
-            ret = instance;
-        } else {
-            const auto *base = find_if<&type_node::base>([type](auto *candidate) {
-                return candidate->ref() == type;
-            }, node);
+    if(node == type) {
+        ret = instance;
+    } else {
+        const auto *base = find_if<&type_node::base>([type](auto *candidate) {
+            return candidate->ref() == type;
+        }, node);
 
-            ret = base ? base->cast(instance) : nullptr;
-        }
-
-        return static_cast<const Type *>(ret);
+        ret = base ? base->cast(instance) : nullptr;
     }
+
+    return static_cast<const Type *>(ret);
 }
 
 

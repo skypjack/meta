@@ -210,6 +210,8 @@ any invoke([[maybe_unused]] handle handle, any *args, std::index_sequence<Indexe
     [[maybe_unused]] const auto direct = std::make_tuple([](meta::any *any, auto *instance) {
         using arg_type = std::remove_reference_t<decltype(*instance)>;
 
+        if constexpr (std::is_same_v<arg_type, meta::any>)
+            return any;
         if(!instance && any->convert<arg_type>()) {
             instance = any->try_cast<arg_type>();
         }
