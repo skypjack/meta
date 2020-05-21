@@ -7,7 +7,6 @@
 [![Build Status](https://github.com/skypjack/meta/workflows/build/badge.svg)](https://github.com/skypjack/meta/actions)
 [![Coverage](https://codecov.io/gh/skypjack/meta/branch/master/graph/badge.svg)](https://codecov.io/gh/skypjack/meta)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.me/skypjack)
-[![Patreon](https://img.shields.io/badge/become-patron-red.svg)](https://www.patreon.com/bePatron?c=1772573)
 
 > The reflection system was born within [EnTT](https://github.com/skypjack/entt)
 > and is developed and enriched there. This project is designed for those who
