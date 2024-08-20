@@ -8,6 +8,7 @@
 #include <cstddef>
 #include <utility>
 #include <functional>
+#include <string_view>
 #include <type_traits>
 #include "policy.hpp"
 #include "meta.hpp"
@@ -852,6 +853,48 @@ inline factory<Type> reflect(const std::size_t identifier, Property &&... proper
     return factory<Type>{}.type(identifier, std::forward<Property>(property)...);
 }
 
+/**
+ * @brief Utility function to use for reflection while automatically adding a name property.
+ *
+ * This is the point from which everything starts.<br/>
+ * By invoking this function with a type that is not yet reflected, a meta type
+ * is created to which it will be possible to attach data and functions through
+ * a dedicated factory.
+ *
+ * @tparam Type Type to reflect.
+ * @tparam Property Types of properties to assign to the reflected type.
+ * @param name Unique name. Used as identifier and as name property.
+ * @param property Properties to assign to the reflected type.
+ * @return A meta factory for the given type.
+ */
+template<typename Type, typename... Property>
+inline factory<Type> named_reflect(const std::string_view& name, Property &&... property) noexcept {
+    std::hash<std::string_view> hash{};
+    return reflect<Type>(hash(name), std::make_pair(hash("name"), std::forward<const std::string_view&>(name)), std::forward<Property>(property)...);
+}
+
+/**
+ * @brief Utility function to use for reflection while automatically adding a name property and aliases.
+ *
+ * This is the point from which everything starts.<br/>
+ * By invoking this function with a type that is not yet reflected, a meta type
+ * is created to which it will be possible to attach data and functions through
+ * a dedicated factory.
+ *
+ * @tparam Type Type to reflect.
+ * @tparam Property Types of properties to assign to the reflected type.
+ * @param name Unique name. Used as identifier and as name property.
+ * @param aliases A list of alias names.
+ * @param property Properties to assign to the reflected type.
+ * @return A meta factory for the given type.
+ */
+template <typename Type, typename... Property>
+inline factory<Type> named_reflect(const std::string_view& name, const std::vector<std::string_view>& aliases, Property &&... property) noexcept {
+    std::hash<std::string_view> hash{};
+    return reflect<Type>(hash(name), std::make_pair(hash("name"), std::forward<const std::string_view&>(name)), std::make_pair(hash("alias"),
+                                    std::forward<const std::vector<std::string_view>&>(aliases)), std::forward<Property>(property)...);
+}
+
 
 /**
  * @brief Utility function to use for reflection.
@@ -909,6 +952,33 @@ inline type resolve(const std::size_t identifier) noexcept {
         return node->identifier == identifier;
     }, internal::type_info<>::type);
 
+    if(!curr)
+    {
+        // check aliases
+        curr = internal::find_if([identifier](auto *node)
+                                 {
+            auto* prop_node = node->prop;
+            std::hash<std::string_view> hash{};
+            size_t aliasHash = hash("alias");
+
+            while (prop_node) {
+                if (prop_node->key() == aliasHash)
+                {
+                    auto aliases = prop_node->value().template cast<std::vector<std::string_view>>();
+
+                    for (auto &alias : aliases)
+                    {
+                        if (hash(alias) == identifier)
+                        {
+                            return true;
+                        }
+                    }
+                }
+                prop_node = prop_node->next;
+            }
+            return false; }, internal::type_info<>::type);
+    }
+
     return curr ? curr->clazz() : type{};
 }
 
@@ -925,6 +995,33 @@ resolve(Op op) noexcept {
         op(node->clazz());
     }, internal::type_info<>::type);
 }
+
+/**
+ * @brief Get the all names for a given type. Includes alias names.
+ * @param type Type to get names for.
+ * @return A list of names for the given type.
+ */
+inline std::vector<std::string_view> get_all_names(const meta::type& type)
+{
+    std::vector<std::string_view> names;
+    std::hash<std::string_view> hash{};
+    size_t nameHash = hash("name");
+    size_t aliasHash = hash("alias");
+    if (type.prop(nameHash))
+    {
+        names.push_back(type.prop(nameHash).value().cast<std::string_view>());
+    }
+    if (type.prop(aliasHash))
+    {
+        auto aliases = type.prop(aliasHash).value().cast<std::vector<std::string_view>>();
+        for (auto& alias : aliases)
+        {
+            names.push_back(alias);
+        }
+    }
+    return names;
+}
+
 
 
 }

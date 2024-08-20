@@ -172,6 +172,17 @@ struct concrete_type : an_abstract_type, another_abstract_type
     void h(char c) override { j = c; }
 };
 
+struct named_type
+{
+};
+
+struct named_and_aliased_type
+{
+};
+
+using alias_name = named_and_aliased_type;
+
+
 struct Meta : public ::testing::Test
 {
     static void SetUpTestCase()
@@ -247,6 +258,10 @@ struct Meta : public ::testing::Test
             .base<an_abstract_type>()
             .base<another_abstract_type>()
             .func<&concrete_type::f>(hash("f"));
+
+        meta::named_reflect<named_type>("named_type");
+
+        meta::named_reflect<named_and_aliased_type>("named_and_aliased_type", { "alias_name" });
     }
 
     static void SetUpAfterUnregistration()
@@ -2168,6 +2183,18 @@ TEST_F(Meta, Variables)
     ASSERT_EQ(c_data.get(c).cast<char>(), 'x');
     ASSERT_EQ(prop, properties::prop_bool);
     ASSERT_EQ(c, 'x');
+}
+
+TEST_F(Meta, NamesAndAliases)
+{
+    std::hash<std::string_view> hash{};
+
+    ASSERT_EQ(meta::resolve<named_type>(), meta::resolve(hash("named_type")));
+
+    ASSERT_EQ(meta::resolve<named_and_aliased_type>(), meta::resolve(hash("named_and_aliased_type")));
+
+    ASSERT_EQ(meta::resolve<named_and_aliased_type>(), meta::resolve(hash("alias_name")));
+
 }
 
 TEST_F(Meta, Unregister)
