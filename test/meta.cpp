@@ -2194,7 +2194,17 @@ TEST_F(Meta, NamesAndAliases)
     ASSERT_EQ(meta::resolve<named_and_aliased_type>(), meta::resolve(hash("named_and_aliased_type")));
 
     ASSERT_EQ(meta::resolve<named_and_aliased_type>(), meta::resolve(hash("alias_name")));
+}
 
+TEST_F(Meta, ConstructShared)
+{
+    auto type = meta::resolve<derived_type>();
+
+    auto sp = type.construct_shared<base_type>(base_type{}, 42, 'c');
+
+    ASSERT_TRUE(sp.get());
+
+    ASSERT_EQ(sp->dumb_fn(), 1);
 }
 
 TEST_F(Meta, Unregister)
