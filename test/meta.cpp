@@ -1,80 +1,100 @@
-#include <utility>
 #include <functional>
-#include <type_traits>
-#include <string_view>
 #include <gtest/gtest.h>
 #include <meta/factory.hpp>
 #include <meta/meta.hpp>
 #include <meta/policy.hpp>
+#include <string_view>
+#include <type_traits>
+#include <utility>
 
-template<typename Type>
-void set(Type &prop, Type value) {
+template <typename Type>
+void set(Type &prop, Type value)
+{
     prop = value;
 }
 
-template<typename Type>
-Type get(Type &prop) {
+template <typename Type>
+Type get(Type &prop)
+{
     return prop;
 }
 
-enum class properties {
+enum class properties
+{
     prop_int,
     prop_bool
 };
 
-struct empty_type {
+struct empty_type
+{
     virtual ~empty_type() = default;
 
-    static void destroy(empty_type &) {
+    static void destroy(empty_type &)
+    {
         ++counter;
     }
 
     inline static int counter = 0;
 };
 
-struct fat_type: empty_type {
+struct fat_type : empty_type
+{
     fat_type() = default;
 
     fat_type(int *value)
         : foo{value}, bar{value}
-    {}
+    {
+    }
 
     int *foo{nullptr};
     int *bar{nullptr};
 
-    bool operator==(const fat_type &other) const {
+    bool operator==(const fat_type &other) const
+    {
         return foo == other.foo && bar == other.bar;
     }
 };
 
-union union_type {
+union union_type
+{
     int i;
     double d;
 };
 
-struct base_type {
+struct base_type
+{
     virtual ~base_type() = default;
+
+    virtual int dumb_fn() { return 0; };
 };
 
-struct derived_type: base_type {
+struct derived_type : base_type
+{
     derived_type() = default;
 
     derived_type(const base_type &, int value, char character)
         : i{value}, c{character}
-    {}
+    {
+    }
 
     int f() const { return i; }
     static char g(const derived_type &type) { return type.c; }
 
     const int i{};
     const char c{};
+
+    int dumb_fn() override { return 1; };
+
+    static std::shared_ptr<base_type> make_base() { return std::make_shared<derived_type>(); }
 };
 
-derived_type derived_factory(const base_type &, int value) {
+derived_type derived_factory(const base_type &, int value)
+{
     return {derived_type{}, value, 'c'};
 }
 
-struct data_type {
+struct data_type
+{
     int i{0};
     const int j{1};
     inline static int h{2};
@@ -83,170 +103,187 @@ struct data_type {
     int v{0};
 };
 
-struct array_type {
+struct array_type
+{
     static inline int global[3];
     int local[3];
 };
 
-struct func_type {
+struct func_type
+{
     int f(const base_type &, int a, int b) { return f(a, b); }
-    int f(int a, int b) { value = a; return b*b; }
-    int f(int v) const { return v*v; }
-    void g(int v) { value = v*v; }
+    int f(int a, int b)
+    {
+        value = a;
+        return b * b;
+    }
+    int f(int v) const { return v * v; }
+    void g(int v) { value = v * v; }
 
     static int h(int &v) { return (v *= value); }
     static void k(int v) { value = v; }
 
     int v(int v) const { return (value = v); }
-    int & a() const { return value; }
+    int &a() const { return value; }
 
     inline static int value = 0;
 };
 
-struct setter_getter_type {
+struct setter_getter_type
+{
     int value{};
 
     int setter(int val) { return value = val; }
     int getter() { return value; }
 
     int setter_with_ref(const int &val) { return value = val; }
-    const int & getter_with_ref() { return value; }
+    const int &getter_with_ref() { return value; }
 
     static int static_setter(setter_getter_type &type, int value) { return type.value = value; }
     static int static_getter(const setter_getter_type &type) { return type.value; }
 };
 
-struct not_comparable_type {
+struct not_comparable_type
+{
     bool operator==(const not_comparable_type &) const = delete;
 };
 
 bool operator!=(const not_comparable_type &, const not_comparable_type &) = delete;
 
-struct an_abstract_type {
+struct an_abstract_type
+{
     virtual ~an_abstract_type() = default;
     void f(int v) { i = v; }
     virtual void g(int) = 0;
     int i{};
 };
 
-struct another_abstract_type {
+struct another_abstract_type
+{
     virtual ~another_abstract_type() = default;
     virtual void h(char) = 0;
     char j{};
 };
 
-struct concrete_type: an_abstract_type, another_abstract_type {
-    void f(int v) { i = v*v; } // hide, it's ok :-)
+struct concrete_type : an_abstract_type, another_abstract_type
+{
+    void f(int v) { i = v * v; } // hide, it's ok :-)
     void g(int v) override { i = -v; }
     void h(char c) override { j = c; }
 };
 
-struct Meta: public ::testing::Test {
-    static void SetUpTestCase() {
+struct Meta : public ::testing::Test
+{
+    static void SetUpTestCase()
+    {
         meta::reflect<double>().conv<int>();
         std::hash<std::string_view> hash{};
 
         meta::reflect<char>(hash("char"), std::make_pair(properties::prop_int, 42))
-                .data<&set<char>, &get<char>>(hash("value"));
+            .data<&set<char>, &get<char>>(hash("value"));
 
         meta::reflect<properties>()
-                .data<properties::prop_bool>(hash("prop_bool"))
-                .data<properties::prop_int>(hash("prop_int"))
-                .data<&set<properties>, &get<properties>>(hash("value"));
+            .data<properties::prop_bool>(hash("prop_bool"))
+            .data<properties::prop_int>(hash("prop_int"))
+            .data<&set<properties>, &get<properties>>(hash("value"));
 
         meta::reflect<unsigned int>().data<0u>(hash("min")).data<100u>(hash("max"));
 
         meta::reflect<base_type>(hash("base"));
 
         meta::reflect<derived_type>(hash("derived"), std::make_pair(properties::prop_int, 99))
-                .base<base_type>()
-                .ctor<const base_type &, int, char>(std::make_pair(properties::prop_bool, false))
-                .ctor<&derived_factory>(std::make_pair(properties::prop_int, 42))
-                .conv<&derived_type::f>()
-                .conv<&derived_type::g>();
+            .base<base_type>()
+            .ctor<const base_type &, int, char>(std::make_pair(properties::prop_bool, false))
+            .ctor<&derived_factory>(std::make_pair(properties::prop_int, 42))
+            .func<&derived_type::make_base>(hash("make_base"), std::make_pair(properties::prop_bool, false))
+            .conv<&derived_type::f>()
+            .conv<&derived_type::g>();
 
         meta::reflect<empty_type>(hash("empty"))
-                .dtor<&empty_type::destroy>();
+            .dtor<&empty_type::destroy>();
 
         meta::reflect<fat_type>(hash("fat"))
-                .base<empty_type>()
-                .dtor<&fat_type::destroy>();
+            .base<empty_type>()
+            .dtor<&fat_type::destroy>();
 
         meta::reflect<data_type>(hash("data"))
-                .data<&data_type::i, meta::as_alias_t>(hash("i"), std::make_pair(properties::prop_int, 0))
-                .data<&data_type::j>(hash("j"), std::make_pair(properties::prop_int, 1))
-                .data<&data_type::h>(hash("h"), std::make_pair(properties::prop_int, 2))
-                .data<&data_type::k>(hash("k"), std::make_pair(properties::prop_int, 3))
-                .data<&data_type::empty>(hash("empty"))
-                .data<&data_type::v, meta::as_void_t>(hash("v"));
+            .data<&data_type::i, meta::as_alias_t>(hash("i"), std::make_pair(properties::prop_int, 0))
+            .data<&data_type::j>(hash("j"), std::make_pair(properties::prop_int, 1))
+            .data<&data_type::h>(hash("h"), std::make_pair(properties::prop_int, 2))
+            .data<&data_type::k>(hash("k"), std::make_pair(properties::prop_int, 3))
+            .data<&data_type::empty>(hash("empty"))
+            .data<&data_type::v, meta::as_void_t>(hash("v"));
 
         meta::reflect<array_type>(hash("array"))
-                .data<&array_type::global>(hash("global"))
-                .data<&array_type::local>(hash("local"));
+            .data<&array_type::global>(hash("global"))
+            .data<&array_type::local>(hash("local"));
 
         meta::reflect<func_type>(hash("func"))
-                .func<static_cast<int(func_type:: *)(const base_type &, int, int)>(&func_type::f)>(hash("f3"))
-                .func<static_cast<int(func_type:: *)(int, int)>(&func_type::f)>(hash("f2"), std::make_pair(properties::prop_bool, false))
-                .func<static_cast<int(func_type:: *)(int) const>(&func_type::f)>(hash("f1"), std::make_pair(properties::prop_bool, false))
-                .func<&func_type::g>(hash("g"), std::make_pair(properties::prop_bool, false))
-                .func<&func_type::h>(hash("h"), std::make_pair(properties::prop_bool, false))
-                .func<&func_type::k>(hash("k"), std::make_pair(properties::prop_bool, false))
-                .func<&func_type::v, meta::as_void_t>(hash("v"))
-                .func<&func_type::a, meta::as_alias_t>(hash("a"));
+            .func<static_cast<int (func_type::*)(const base_type &, int, int)>(&func_type::f)>(hash("f3"))
+            .func<static_cast<int (func_type::*)(int, int)>(&func_type::f)>(hash("f2"), std::make_pair(properties::prop_bool, false))
+            .func<static_cast<int (func_type::*)(int) const>(&func_type::f)>(hash("f1"), std::make_pair(properties::prop_bool, false))
+            .func<&func_type::g>(hash("g"), std::make_pair(properties::prop_bool, false))
+            .func<&func_type::h>(hash("h"), std::make_pair(properties::prop_bool, false))
+            .func<&func_type::k>(hash("k"), std::make_pair(properties::prop_bool, false))
+            .func<&func_type::v, meta::as_void_t>(hash("v"))
+            .func<&func_type::a, meta::as_alias_t>(hash("a"));
 
         meta::reflect<setter_getter_type>(hash("setter_getter"))
-                .data<&setter_getter_type::static_setter, &setter_getter_type::static_getter>(hash("x"))
-                .data<&setter_getter_type::setter, &setter_getter_type::getter>(hash("y"))
-                .data<&setter_getter_type::static_setter, &setter_getter_type::getter>(hash("z"))
-                .data<&setter_getter_type::setter_with_ref, &setter_getter_type::getter_with_ref>(hash("w"));
+            .data<&setter_getter_type::static_setter, &setter_getter_type::static_getter>(hash("x"))
+            .data<&setter_getter_type::setter, &setter_getter_type::getter>(hash("y"))
+            .data<&setter_getter_type::static_setter, &setter_getter_type::getter>(hash("z"))
+            .data<&setter_getter_type::setter_with_ref, &setter_getter_type::getter_with_ref>(hash("w"));
 
         meta::reflect<an_abstract_type>(hash("an_abstract_type"), std::make_pair(properties::prop_bool, false))
-                .data<&an_abstract_type::i>(hash("i"))
-                .func<&an_abstract_type::f>(hash("f"))
-                .func<&an_abstract_type::g>(hash("g"));
+            .data<&an_abstract_type::i>(hash("i"))
+            .func<&an_abstract_type::f>(hash("f"))
+            .func<&an_abstract_type::g>(hash("g"));
 
         meta::reflect<another_abstract_type>(hash("another_abstract_type"), std::make_pair(properties::prop_int, 42))
-                .data<&another_abstract_type::j>(hash("j"))
-                .func<&another_abstract_type::h>(hash("h"));
+            .data<&another_abstract_type::j>(hash("j"))
+            .func<&another_abstract_type::h>(hash("h"));
 
         meta::reflect<concrete_type>(hash("concrete"))
-                .base<an_abstract_type>()
-                .base<another_abstract_type>()
-                .func<&concrete_type::f>(hash("f"));
+            .base<an_abstract_type>()
+            .base<another_abstract_type>()
+            .func<&concrete_type::f>(hash("f"));
     }
 
-    static void SetUpAfterUnregistration() {
+    static void SetUpAfterUnregistration()
+    {
         meta::reflect<double>().conv<float>();
         std::hash<std::string_view> hash{};
 
         meta::reflect<derived_type>(hash("my_type"), std::make_pair(properties::prop_bool, false))
-                .ctor<>();
+            .ctor<>();
 
         meta::reflect<another_abstract_type>(hash("your_type"))
-                .data<&another_abstract_type::j>(hash("a_data_member"))
-                .func<&another_abstract_type::h>(hash("a_member_function"));
+            .data<&another_abstract_type::j>(hash("a_data_member"))
+            .func<&another_abstract_type::h>(hash("a_member_function"));
     }
 
-    void SetUp() override {
+    void SetUp() override
+    {
         empty_type::counter = 0;
         func_type::value = 0;
     }
 };
 
-TEST_F(Meta, Resolve) {
+TEST_F(Meta, Resolve)
+{
     std::hash<std::string_view> hash{};
     ASSERT_EQ(meta::resolve<derived_type>(), meta::resolve(hash("derived")));
 
     bool found = false;
 
-    meta::resolve([&found](auto type) {
-        found = found || type == meta::resolve<derived_type>();
-    });
+    meta::resolve([&found](auto type)
+                  { found = found || type == meta::resolve<derived_type>(); });
 
     ASSERT_TRUE(found);
 }
 
-TEST_F(Meta, MetaAnyFromMetaHandle) {
+TEST_F(Meta, MetaAnyFromMetaHandle)
+{
     int value = 42;
     meta::handle handle{value};
     meta::any any{handle};
@@ -262,7 +299,8 @@ TEST_F(Meta, MetaAnyFromMetaHandle) {
     ASSERT_EQ(value, 3);
 }
 
-TEST_F(Meta, MetaAnySBO) {
+TEST_F(Meta, MetaAnySBO)
+{
     meta::any any{'c'};
 
     ASSERT_TRUE(any);
@@ -276,7 +314,8 @@ TEST_F(Meta, MetaAnySBO) {
     ASSERT_NE(meta::any{'h'}, any);
 }
 
-TEST_F(Meta, MetaAnyNoSBO) {
+TEST_F(Meta, MetaAnyNoSBO)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -292,7 +331,8 @@ TEST_F(Meta, MetaAnyNoSBO) {
     ASSERT_NE(fat_type{}, any);
 }
 
-TEST_F(Meta, MetaAnyEmpty) {
+TEST_F(Meta, MetaAnyEmpty)
+{
     meta::any any{};
 
     ASSERT_FALSE(any);
@@ -305,7 +345,8 @@ TEST_F(Meta, MetaAnyEmpty) {
     ASSERT_NE(meta::any{'c'}, any);
 }
 
-TEST_F(Meta, MetaAnySBOInPlaceTypeConstruction) {
+TEST_F(Meta, MetaAnySBOInPlaceTypeConstruction)
+{
     meta::any any{std::in_place_type<int>, 42};
 
     ASSERT_TRUE(any);
@@ -320,7 +361,8 @@ TEST_F(Meta, MetaAnySBOInPlaceTypeConstruction) {
     ASSERT_NE(meta::any{3}, any);
 }
 
-TEST_F(Meta, MetaAnySBOAsAliasConstruction) {
+TEST_F(Meta, MetaAnySBOAsAliasConstruction)
+{
     int value = 3;
     int other = 42;
     meta::any any{std::ref(value)};
@@ -338,7 +380,8 @@ TEST_F(Meta, MetaAnySBOAsAliasConstruction) {
     ASSERT_EQ(meta::any{3}, any);
 }
 
-TEST_F(Meta, MetaAnySBOCopyConstruction) {
+TEST_F(Meta, MetaAnySBOCopyConstruction)
+{
     meta::any any{42};
     meta::any other{any};
 
@@ -352,7 +395,8 @@ TEST_F(Meta, MetaAnySBOCopyConstruction) {
     ASSERT_NE(other, meta::any{0});
 }
 
-TEST_F(Meta, MetaAnySBOCopyAssignment) {
+TEST_F(Meta, MetaAnySBOCopyAssignment)
+{
     meta::any any{42};
     meta::any other{3};
 
@@ -368,7 +412,8 @@ TEST_F(Meta, MetaAnySBOCopyAssignment) {
     ASSERT_NE(other, meta::any{0});
 }
 
-TEST_F(Meta, MetaAnySBOMoveConstruction) {
+TEST_F(Meta, MetaAnySBOMoveConstruction)
+{
     meta::any any{42};
     meta::any other{std::move(any)};
 
@@ -382,7 +427,8 @@ TEST_F(Meta, MetaAnySBOMoveConstruction) {
     ASSERT_NE(other, meta::any{0});
 }
 
-TEST_F(Meta, MetaAnySBOMoveAssignment) {
+TEST_F(Meta, MetaAnySBOMoveAssignment)
+{
     meta::any any{42};
     meta::any other{3};
 
@@ -398,7 +444,8 @@ TEST_F(Meta, MetaAnySBOMoveAssignment) {
     ASSERT_NE(other, meta::any{0});
 }
 
-TEST_F(Meta, MetaAnySBODirectAssignment) {
+TEST_F(Meta, MetaAnySBODirectAssignment)
+{
     meta::any any{};
     any = 42;
 
@@ -410,7 +457,8 @@ TEST_F(Meta, MetaAnySBODirectAssignment) {
     ASSERT_NE(meta::any{0}, any);
 }
 
-TEST_F(Meta, MetaAnyNoSBOInPlaceTypeConstruction) {
+TEST_F(Meta, MetaAnyNoSBOInPlaceTypeConstruction)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{std::in_place_type<fat_type>, instance};
@@ -427,7 +475,8 @@ TEST_F(Meta, MetaAnyNoSBOInPlaceTypeConstruction) {
     ASSERT_NE(meta::any{fat_type{}}, any);
 }
 
-TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction) {
+TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction)
+{
     int value = 3;
     fat_type instance{&value};
     meta::any any{std::ref(instance)};
@@ -444,7 +493,8 @@ TEST_F(Meta, MetaAnyNoSBOAsAliasConstruction) {
     ASSERT_NE(meta::any{fat_type{}}, any);
 }
 
-TEST_F(Meta, MetaAnyNoSBOCopyConstruction) {
+TEST_F(Meta, MetaAnyNoSBOCopyConstruction)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -460,7 +510,8 @@ TEST_F(Meta, MetaAnyNoSBOCopyConstruction) {
     ASSERT_NE(other, fat_type{});
 }
 
-TEST_F(Meta, MetaAnyNoSBOCopyAssignment) {
+TEST_F(Meta, MetaAnyNoSBOCopyAssignment)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -478,7 +529,8 @@ TEST_F(Meta, MetaAnyNoSBOCopyAssignment) {
     ASSERT_NE(other, fat_type{});
 }
 
-TEST_F(Meta, MetaAnyNoSBOMoveConstruction) {
+TEST_F(Meta, MetaAnyNoSBOMoveConstruction)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -494,7 +546,8 @@ TEST_F(Meta, MetaAnyNoSBOMoveConstruction) {
     ASSERT_NE(other, fat_type{});
 }
 
-TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
+TEST_F(Meta, MetaAnyNoSBOMoveAssignment)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -512,7 +565,8 @@ TEST_F(Meta, MetaAnyNoSBOMoveAssignment) {
     ASSERT_NE(other, fat_type{});
 }
 
-TEST_F(Meta, MetaAnyNoSBODirectAssignment) {
+TEST_F(Meta, MetaAnyNoSBODirectAssignment)
+{
     int value = 42;
     meta::any any{};
     any = fat_type{&value};
@@ -525,7 +579,8 @@ TEST_F(Meta, MetaAnyNoSBODirectAssignment) {
     ASSERT_NE(fat_type{}, any);
 }
 
-TEST_F(Meta, MetaAnyVoidInPlaceTypeConstruction) {
+TEST_F(Meta, MetaAnyVoidInPlaceTypeConstruction)
+{
     meta::any any{std::in_place_type<void>};
 
     ASSERT_TRUE(any);
@@ -537,7 +592,8 @@ TEST_F(Meta, MetaAnyVoidInPlaceTypeConstruction) {
     ASSERT_NE(meta::any{3}, any);
 }
 
-TEST_F(Meta, MetaAnyVoidCopyConstruction) {
+TEST_F(Meta, MetaAnyVoidCopyConstruction)
+{
     meta::any any{std::in_place_type<void>};
     meta::any other{any};
 
@@ -547,7 +603,8 @@ TEST_F(Meta, MetaAnyVoidCopyConstruction) {
     ASSERT_EQ(other, meta::any{std::in_place_type<void>});
 }
 
-TEST_F(Meta, MetaAnyVoidCopyAssignment) {
+TEST_F(Meta, MetaAnyVoidCopyAssignment)
+{
     meta::any any{std::in_place_type<void>};
     meta::any other{std::in_place_type<void>};
 
@@ -559,7 +616,8 @@ TEST_F(Meta, MetaAnyVoidCopyAssignment) {
     ASSERT_EQ(other, meta::any{std::in_place_type<void>});
 }
 
-TEST_F(Meta, MetaAnyVoidMoveConstruction) {
+TEST_F(Meta, MetaAnyVoidMoveConstruction)
+{
     meta::any any{std::in_place_type<void>};
     meta::any other{std::move(any)};
 
@@ -569,7 +627,8 @@ TEST_F(Meta, MetaAnyVoidMoveConstruction) {
     ASSERT_EQ(other, meta::any{std::in_place_type<void>});
 }
 
-TEST_F(Meta, MetaAnyVoidMoveAssignment) {
+TEST_F(Meta, MetaAnyVoidMoveAssignment)
+{
     meta::any any{std::in_place_type<void>};
     meta::any other{std::in_place_type<void>};
 
@@ -581,7 +640,8 @@ TEST_F(Meta, MetaAnyVoidMoveAssignment) {
     ASSERT_EQ(other, meta::any{std::in_place_type<void>});
 }
 
-TEST_F(Meta, MetaAnySBOMoveInvalidate) {
+TEST_F(Meta, MetaAnySBOMoveInvalidate)
+{
     meta::any any{42};
     meta::any other{std::move(any)};
     meta::any valid = std::move(other);
@@ -591,7 +651,8 @@ TEST_F(Meta, MetaAnySBOMoveInvalidate) {
     ASSERT_TRUE(valid);
 }
 
-TEST_F(Meta, MetaAnyNoSBOMoveInvalidate) {
+TEST_F(Meta, MetaAnyNoSBOMoveInvalidate)
+{
     int value = 42;
     fat_type instance{&value};
     meta::any any{instance};
@@ -603,7 +664,8 @@ TEST_F(Meta, MetaAnyNoSBOMoveInvalidate) {
     ASSERT_TRUE(valid);
 }
 
-TEST_F(Meta, MetaAnyVoidMoveInvalidate) {
+TEST_F(Meta, MetaAnyVoidMoveInvalidate)
+{
     meta::any any{std::in_place_type<void>};
     meta::any other{std::move(any)};
     meta::any valid = std::move(other);
@@ -613,24 +675,32 @@ TEST_F(Meta, MetaAnyVoidMoveInvalidate) {
     ASSERT_TRUE(valid);
 }
 
-TEST_F(Meta, MetaAnySBODestruction) {
+TEST_F(Meta, MetaAnySBODestruction)
+{
     ASSERT_EQ(empty_type::counter, 0);
-    { meta::any any{empty_type{}}; }
+    {
+        meta::any any{empty_type{}};
+    }
     ASSERT_EQ(empty_type::counter, 1);
 }
 
-TEST_F(Meta, MetaAnyNoSBODestruction) {
+TEST_F(Meta, MetaAnyNoSBODestruction)
+{
     ASSERT_EQ(fat_type::counter, 0);
-    { meta::any any{fat_type{}}; }
+    {
+        meta::any any{fat_type{}};
+    }
     ASSERT_EQ(fat_type::counter, 1);
 }
 
-TEST_F(Meta, MetaAnyVoidDestruction) {
+TEST_F(Meta, MetaAnyVoidDestruction)
+{
     // just let asan tell us if everything is ok here
     [[maybe_unused]] meta::any any{std::in_place_type<void>};
 }
 
-TEST_F(Meta, MetaAnyEmplace) {
+TEST_F(Meta, MetaAnyEmplace)
+{
     meta::any any{};
     any.emplace<int>(42);
 
@@ -646,7 +716,8 @@ TEST_F(Meta, MetaAnyEmplace) {
     ASSERT_NE(meta::any{3}, any);
 }
 
-TEST_F(Meta, MetaAnyEmplaceVoid) {
+TEST_F(Meta, MetaAnyEmplaceVoid)
+{
     meta::any any{};
     any.emplace<void>();
 
@@ -657,7 +728,8 @@ TEST_F(Meta, MetaAnyEmplaceVoid) {
     ASSERT_EQ(any, (meta::any{std::in_place_type<void>}));
 }
 
-TEST_F(Meta, MetaAnySBOSwap) {
+TEST_F(Meta, MetaAnySBOSwap)
+{
     meta::any lhs{'c'};
     meta::any rhs{42};
 
@@ -669,7 +741,8 @@ TEST_F(Meta, MetaAnySBOSwap) {
     ASSERT_EQ(rhs.cast<char>(), 'c');
 }
 
-TEST_F(Meta, MetaAnyNoSBOSwap) {
+TEST_F(Meta, MetaAnyNoSBOSwap)
+{
     int i, j;
     meta::any lhs{fat_type{&i}};
     meta::any rhs{fat_type{&j}};
@@ -680,7 +753,8 @@ TEST_F(Meta, MetaAnyNoSBOSwap) {
     ASSERT_EQ(rhs.cast<fat_type>().bar, &i);
 }
 
-TEST_F(Meta, MetaAnyVoidSwap) {
+TEST_F(Meta, MetaAnyVoidSwap)
+{
     meta::any lhs{std::in_place_type<void>};
     meta::any rhs{std::in_place_type<void>};
     const auto *pre = lhs.data();
@@ -690,7 +764,8 @@ TEST_F(Meta, MetaAnyVoidSwap) {
     ASSERT_EQ(pre, lhs.data());
 }
 
-TEST_F(Meta, MetaAnySBOWithNoSBOSwap) {
+TEST_F(Meta, MetaAnySBOWithNoSBOSwap)
+{
     int value = 42;
     meta::any lhs{fat_type{&value}};
     meta::any rhs{'c'};
@@ -704,7 +779,8 @@ TEST_F(Meta, MetaAnySBOWithNoSBOSwap) {
     ASSERT_EQ(rhs.cast<fat_type>().bar, &value);
 }
 
-TEST_F(Meta, MetaAnySBOWithEmptySwap) {
+TEST_F(Meta, MetaAnySBOWithEmptySwap)
+{
     meta::any lhs{'c'};
     meta::any rhs{};
 
@@ -721,7 +797,8 @@ TEST_F(Meta, MetaAnySBOWithEmptySwap) {
     ASSERT_EQ(lhs.cast<char>(), 'c');
 }
 
-TEST_F(Meta, MetaAnySBOWithVoidSwap) {
+TEST_F(Meta, MetaAnySBOWithVoidSwap)
+{
     meta::any lhs{'c'};
     meta::any rhs{std::in_place_type<void>};
 
@@ -732,7 +809,8 @@ TEST_F(Meta, MetaAnySBOWithVoidSwap) {
     ASSERT_EQ(rhs.cast<char>(), 'c');
 }
 
-TEST_F(Meta, MetaAnyNoSBOWithEmptySwap) {
+TEST_F(Meta, MetaAnyNoSBOWithEmptySwap)
+{
     int i;
     meta::any lhs{fat_type{&i}};
     meta::any rhs{};
@@ -746,7 +824,8 @@ TEST_F(Meta, MetaAnyNoSBOWithEmptySwap) {
     ASSERT_EQ(lhs.cast<fat_type>().bar, &i);
 }
 
-TEST_F(Meta, MetaAnyNoSBOWithVoidSwap) {
+TEST_F(Meta, MetaAnyNoSBOWithVoidSwap)
+{
     int i;
     meta::any lhs{fat_type{&i}};
     meta::any rhs{std::in_place_type<void>};
@@ -760,7 +839,8 @@ TEST_F(Meta, MetaAnyNoSBOWithVoidSwap) {
     ASSERT_EQ(lhs.cast<fat_type>().bar, &i);
 }
 
-TEST_F(Meta, MetaAnyComparable) {
+TEST_F(Meta, MetaAnyComparable)
+{
     meta::any any{'c'};
 
     ASSERT_EQ(any, any);
@@ -775,7 +855,8 @@ TEST_F(Meta, MetaAnyComparable) {
     ASSERT_TRUE(any != meta::any{});
 }
 
-TEST_F(Meta, MetaAnyNotComparable) {
+TEST_F(Meta, MetaAnyNotComparable)
+{
     meta::any any{not_comparable_type{}};
 
     ASSERT_EQ(any, any);
@@ -787,7 +868,8 @@ TEST_F(Meta, MetaAnyNotComparable) {
     ASSERT_TRUE(any != meta::any{});
 }
 
-TEST_F(Meta, MetaAnyCompareVoid) {
+TEST_F(Meta, MetaAnyCompareVoid)
+{
     meta::any any{std::in_place_type<void>};
 
     ASSERT_EQ(any, any);
@@ -802,7 +884,8 @@ TEST_F(Meta, MetaAnyCompareVoid) {
     ASSERT_TRUE(any != meta::any{});
 }
 
-TEST_F(Meta, MetaAnyTryCast) {
+TEST_F(Meta, MetaAnyTryCast)
+{
     meta::any any{derived_type{}};
 
     ASSERT_TRUE(any);
@@ -814,7 +897,8 @@ TEST_F(Meta, MetaAnyTryCast) {
     ASSERT_EQ(std::as_const(any).try_cast<derived_type>(), any.data());
 }
 
-TEST_F(Meta, MetaAnyCast) {
+TEST_F(Meta, MetaAnyCast)
+{
     meta::any any{derived_type{}};
 
     ASSERT_TRUE(any);
@@ -826,7 +910,8 @@ TEST_F(Meta, MetaAnyCast) {
     ASSERT_EQ(std::as_const(any).try_cast<derived_type>(), any.data());
 }
 
-TEST_F(Meta, MetaAnyConvert) {
+TEST_F(Meta, MetaAnyConvert)
+{
     meta::any any{42.};
 
     ASSERT_TRUE(any);
@@ -840,7 +925,8 @@ TEST_F(Meta, MetaAnyConvert) {
     ASSERT_EQ(any.cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaAnyConstConvert) {
+TEST_F(Meta, MetaAnyConstConvert)
+{
     const meta::any any{42.};
 
     ASSERT_TRUE(any);
@@ -858,7 +944,8 @@ TEST_F(Meta, MetaAnyConstConvert) {
     ASSERT_EQ(other.cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaHandleFromObject) {
+TEST_F(Meta, MetaHandleFromObject)
+{
     empty_type empty{};
     meta::handle handle{empty};
 
@@ -868,7 +955,8 @@ TEST_F(Meta, MetaHandleFromObject) {
     ASSERT_EQ(handle.data(), &empty);
 }
 
-TEST_F(Meta, MetaHandleFromMetaAny) {
+TEST_F(Meta, MetaHandleFromMetaAny)
+{
     meta::any any{42};
     meta::handle handle{any};
 
@@ -878,7 +966,8 @@ TEST_F(Meta, MetaHandleFromMetaAny) {
     ASSERT_EQ(handle.data(), any.data());
 }
 
-TEST_F(Meta, MetaHandleEmpty) {
+TEST_F(Meta, MetaHandleEmpty)
+{
     meta::handle handle{};
 
     ASSERT_FALSE(handle);
@@ -887,7 +976,8 @@ TEST_F(Meta, MetaHandleEmpty) {
     ASSERT_EQ(handle.data(), nullptr);
 }
 
-TEST_F(Meta, MetaProp) {
+TEST_F(Meta, MetaProp)
+{
     auto prop = meta::resolve<char>().prop(properties::prop_int);
 
     ASSERT_TRUE(prop);
@@ -896,7 +986,8 @@ TEST_F(Meta, MetaProp) {
     ASSERT_EQ(prop.value(), 42);
 }
 
-TEST_F(Meta, MetaBase) {
+TEST_F(Meta, MetaBase)
+{
     std::hash<std::string_view> hash{};
     auto base = meta::resolve<derived_type>().base(hash("base"));
     derived_type derived{};
@@ -908,7 +999,8 @@ TEST_F(Meta, MetaBase) {
     ASSERT_EQ(base.cast(&derived), static_cast<base_type *>(&derived));
 }
 
-TEST_F(Meta, MetaConv) {
+TEST_F(Meta, MetaConv)
+{
     auto conv = meta::resolve<double>().conv<int>();
     double value = 3.;
 
@@ -924,7 +1016,8 @@ TEST_F(Meta, MetaConv) {
     ASSERT_EQ(any.cast<int>(), 3);
 }
 
-TEST_F(Meta, MetaConvAsFreeFunctions) {
+TEST_F(Meta, MetaConvAsFreeFunctions)
+{
     auto conv = meta::resolve<derived_type>().conv<int>();
     derived_type derived{derived_type{}, 42, 'c'};
 
@@ -940,7 +1033,8 @@ TEST_F(Meta, MetaConvAsFreeFunctions) {
     ASSERT_EQ(any.cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaConvAsMemberFunctions) {
+TEST_F(Meta, MetaConvAsMemberFunctions)
+{
     auto conv = meta::resolve<derived_type>().conv<char>();
     derived_type derived{derived_type{}, 42, 'c'};
 
@@ -956,7 +1050,8 @@ TEST_F(Meta, MetaConvAsMemberFunctions) {
     ASSERT_EQ(any.cast<char>(), 'c');
 }
 
-TEST_F(Meta, MetaCtor) {
+TEST_F(Meta, MetaCtor)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int, char>();
     std::hash<std::string_view> hash{};
 
@@ -978,11 +1073,11 @@ TEST_F(Meta, MetaCtor) {
     ASSERT_EQ(any.cast<derived_type>().i, 42);
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 
-    ctor.prop([](auto prop) {
+    ctor.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE(ctor.prop(properties::prop_int));
 
@@ -993,7 +1088,8 @@ TEST_F(Meta, MetaCtor) {
     ASSERT_FALSE(prop.value().template cast<bool>());
 }
 
-TEST_F(Meta, MetaCtorFunc) {
+TEST_F(Meta, MetaCtorFunc)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int>();
     std::hash<std::string_view> hash{};
 
@@ -1013,11 +1109,11 @@ TEST_F(Meta, MetaCtorFunc) {
     ASSERT_EQ(any.cast<derived_type>().i, 42);
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 
-    ctor.prop([](auto prop) {
+    ctor.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 42);
-    });
+        ASSERT_EQ(prop.value(), 42); });
 
     ASSERT_FALSE(ctor.prop(properties::prop_bool));
 
@@ -1028,7 +1124,8 @@ TEST_F(Meta, MetaCtorFunc) {
     ASSERT_EQ(prop.value(), 42);
 }
 
-TEST_F(Meta, MetaCtorMetaAnyArgs) {
+TEST_F(Meta, MetaCtorMetaAnyArgs)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int, char>();
     auto any = ctor.invoke(base_type{}, meta::any{42}, meta::any{'c'});
 
@@ -1038,12 +1135,14 @@ TEST_F(Meta, MetaCtorMetaAnyArgs) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaCtorInvalidArgs) {
+TEST_F(Meta, MetaCtorInvalidArgs)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int, char>();
     ASSERT_FALSE(ctor.invoke(base_type{}, meta::any{'c'}, meta::any{42}));
 }
 
-TEST_F(Meta, MetaCtorCastAndConvert) {
+TEST_F(Meta, MetaCtorCastAndConvert)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int, char>();
     auto any = ctor.invoke(meta::any{derived_type{}}, meta::any{42.}, meta::any{'c'});
 
@@ -1053,7 +1152,8 @@ TEST_F(Meta, MetaCtorCastAndConvert) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaCtorFuncMetaAnyArgs) {
+TEST_F(Meta, MetaCtorFuncMetaAnyArgs)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int>();
     auto any = ctor.invoke(base_type{}, meta::any{42});
 
@@ -1063,12 +1163,14 @@ TEST_F(Meta, MetaCtorFuncMetaAnyArgs) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaCtorFuncInvalidArgs) {
+TEST_F(Meta, MetaCtorFuncInvalidArgs)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int>();
     ASSERT_FALSE(ctor.invoke(base_type{}, meta::any{'c'}));
 }
 
-TEST_F(Meta, MetaCtorFuncCastAndConvert) {
+TEST_F(Meta, MetaCtorFuncCastAndConvert)
+{
     auto ctor = meta::resolve<derived_type>().ctor<const base_type &, int>();
     auto any = ctor.invoke(meta::any{derived_type{}}, meta::any{42.});
 
@@ -1078,7 +1180,8 @@ TEST_F(Meta, MetaCtorFuncCastAndConvert) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaDtor) {
+TEST_F(Meta, MetaDtor)
+{
     std::hash<std::string_view> hash{};
     auto dtor = meta::resolve<empty_type>().dtor();
     empty_type empty{};
@@ -1091,7 +1194,8 @@ TEST_F(Meta, MetaDtor) {
     ASSERT_EQ(empty_type::counter, 1);
 }
 
-TEST_F(Meta, MetaDtorMetaAnyArg) {
+TEST_F(Meta, MetaDtorMetaAnyArg)
+{
     auto dtor = meta::resolve<empty_type>().dtor();
     meta::any any{empty_type{}};
 
@@ -1100,13 +1204,14 @@ TEST_F(Meta, MetaDtorMetaAnyArg) {
     ASSERT_EQ(empty_type::counter, 1);
 }
 
-TEST_F(Meta, MetaDtorMetaAnyInvalidArg) {
+TEST_F(Meta, MetaDtorMetaAnyInvalidArg)
+{
     auto instance = 0;
     ASSERT_FALSE(meta::resolve<empty_type>().dtor().invoke(instance));
 }
 
-
-TEST_F(Meta, MetaData) {
+TEST_F(Meta, MetaData)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("i"));
     data_type instance{};
@@ -1121,11 +1226,11 @@ TEST_F(Meta, MetaData) {
     ASSERT_TRUE(data.set(instance, 42));
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
 
-    data.prop([](auto prop) {
+    data.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 0);
-    });
+        ASSERT_EQ(prop.value(), 0); });
 
     ASSERT_FALSE(data.prop(properties::prop_bool));
 
@@ -1136,7 +1241,8 @@ TEST_F(Meta, MetaData) {
     ASSERT_EQ(prop.value(), 0);
 }
 
-TEST_F(Meta, MetaDataConst) {
+TEST_F(Meta, MetaDataConst)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("j"));
     data_type instance{};
@@ -1150,11 +1256,11 @@ TEST_F(Meta, MetaDataConst) {
     ASSERT_FALSE(data.set(instance, 42));
     ASSERT_EQ(data.get(instance).cast<int>(), 1);
 
-    data.prop([](auto prop) {
+    data.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 1);
-    });
+        ASSERT_EQ(prop.value(), 1); });
 
     ASSERT_FALSE(data.prop(properties::prop_bool));
 
@@ -1165,7 +1271,8 @@ TEST_F(Meta, MetaDataConst) {
     ASSERT_EQ(prop.value(), 1);
 }
 
-TEST_F(Meta, MetaDataStatic) {
+TEST_F(Meta, MetaDataStatic)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("h"));
 
@@ -1178,11 +1285,11 @@ TEST_F(Meta, MetaDataStatic) {
     ASSERT_TRUE(data.set({}, 42));
     ASSERT_EQ(data.get({}).cast<int>(), 42);
 
-    data.prop([](auto prop) {
+    data.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 2);
-    });
+        ASSERT_EQ(prop.value(), 2); });
 
     ASSERT_FALSE(data.prop(properties::prop_bool));
 
@@ -1193,7 +1300,8 @@ TEST_F(Meta, MetaDataStatic) {
     ASSERT_EQ(prop.value(), 2);
 }
 
-TEST_F(Meta, MetaDataConstStatic) {
+TEST_F(Meta, MetaDataConstStatic)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("k"));
 
@@ -1206,11 +1314,11 @@ TEST_F(Meta, MetaDataConstStatic) {
     ASSERT_FALSE(data.set({}, 42));
     ASSERT_EQ(data.get({}).cast<int>(), 3);
 
-    data.prop([](auto prop) {
+    data.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 3);
-    });
+        ASSERT_EQ(prop.value(), 3); });
 
     ASSERT_FALSE(data.prop(properties::prop_bool));
 
@@ -1221,7 +1329,8 @@ TEST_F(Meta, MetaDataConstStatic) {
     ASSERT_EQ(prop.value(), 3);
 }
 
-TEST_F(Meta, MetaDataGetMetaAnyArg) {
+TEST_F(Meta, MetaDataGetMetaAnyArg)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("i"));
     meta::any any{data_type{}};
@@ -1233,13 +1342,15 @@ TEST_F(Meta, MetaDataGetMetaAnyArg) {
     ASSERT_EQ(value.cast<int>(), 99);
 }
 
-TEST_F(Meta, MetaDataGetInvalidArg) {
+TEST_F(Meta, MetaDataGetInvalidArg)
+{
     std::hash<std::string_view> hash{};
     auto instance = 0;
     ASSERT_FALSE(meta::resolve<data_type>().data(hash("i")).get(instance));
 }
 
-TEST_F(Meta, MetaDataSetMetaAnyArg) {
+TEST_F(Meta, MetaDataSetMetaAnyArg)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("i"));
     meta::any any{data_type{}};
@@ -1250,12 +1361,14 @@ TEST_F(Meta, MetaDataSetMetaAnyArg) {
     ASSERT_EQ(any.cast<data_type>().i, 42);
 }
 
-TEST_F(Meta, MetaDataSetInvalidArg) {
+TEST_F(Meta, MetaDataSetInvalidArg)
+{
     std::hash<std::string_view> hash{};
     ASSERT_FALSE(meta::resolve<data_type>().data(hash("i")).set({}, 'c'));
 }
 
-TEST_F(Meta, MetaDataSetCast) {
+TEST_F(Meta, MetaDataSetCast)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("empty"));
     data_type instance{};
@@ -1265,7 +1378,8 @@ TEST_F(Meta, MetaDataSetCast) {
     ASSERT_EQ(empty_type::counter, 1);
 }
 
-TEST_F(Meta, MetaDataSetConvert) {
+TEST_F(Meta, MetaDataSetConvert)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("i"));
     data_type instance{};
@@ -1275,7 +1389,8 @@ TEST_F(Meta, MetaDataSetConvert) {
     ASSERT_EQ(instance.i, 3);
 }
 
-TEST_F(Meta, MetaDataSetterGetterAsFreeFunctions) {
+TEST_F(Meta, MetaDataSetterGetterAsFreeFunctions)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<setter_getter_type>().data(hash("x"));
     setter_getter_type instance{};
@@ -1291,7 +1406,8 @@ TEST_F(Meta, MetaDataSetterGetterAsFreeFunctions) {
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaDataSetterGetterAsMemberFunctions) {
+TEST_F(Meta, MetaDataSetterGetterAsMemberFunctions)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<setter_getter_type>().data(hash("y"));
     setter_getter_type instance{};
@@ -1307,7 +1423,8 @@ TEST_F(Meta, MetaDataSetterGetterAsMemberFunctions) {
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaDataSetterGetterWithRefAsMemberFunctions) {
+TEST_F(Meta, MetaDataSetterGetterWithRefAsMemberFunctions)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<setter_getter_type>().data(hash("w"));
     setter_getter_type instance{};
@@ -1323,7 +1440,8 @@ TEST_F(Meta, MetaDataSetterGetterWithRefAsMemberFunctions) {
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaDataSetterGetterMixed) {
+TEST_F(Meta, MetaDataSetterGetterMixed)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<setter_getter_type>().data(hash("z"));
     setter_getter_type instance{};
@@ -1339,7 +1457,8 @@ TEST_F(Meta, MetaDataSetterGetterMixed) {
     ASSERT_EQ(data.get(instance).cast<int>(), 42);
 }
 
-TEST_F(Meta, MetaDataArrayStatic) {
+TEST_F(Meta, MetaDataArrayStatic)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<array_type>().data(hash("global"));
 
@@ -1360,15 +1479,16 @@ TEST_F(Meta, MetaDataArrayStatic) {
     ASSERT_EQ(data.get({}, 2).cast<int>(), 7);
     ASSERT_FALSE(data.set({}, 0, 'c'));
     ASSERT_EQ(data.get({}, 0).cast<int>(), 3);
-    ASSERT_TRUE(data.set({}, 0, data.get({}, 0).cast<int>()+2));
-    ASSERT_TRUE(data.set({}, 1, data.get({}, 1).cast<int>()+2));
-    ASSERT_TRUE(data.set({}, 2, data.get({}, 2).cast<int>()+2));
+    ASSERT_TRUE(data.set({}, 0, data.get({}, 0).cast<int>() + 2));
+    ASSERT_TRUE(data.set({}, 1, data.get({}, 1).cast<int>() + 2));
+    ASSERT_TRUE(data.set({}, 2, data.get({}, 2).cast<int>() + 2));
     ASSERT_EQ(data.get({}, 0).cast<int>(), 5);
     ASSERT_EQ(data.get({}, 1).cast<int>(), 7);
     ASSERT_EQ(data.get({}, 2).cast<int>(), 9);
 }
 
-TEST_F(Meta, MetaDataArray) {
+TEST_F(Meta, MetaDataArray)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<array_type>().data(hash("local"));
     array_type instance;
@@ -1390,15 +1510,16 @@ TEST_F(Meta, MetaDataArray) {
     ASSERT_EQ(data.get(instance, 2).cast<int>(), 7);
     ASSERT_FALSE(data.set(instance, 0, 'c'));
     ASSERT_EQ(data.get(instance, 0).cast<int>(), 3);
-    ASSERT_TRUE(data.set(instance, 0, data.get(instance, 0).cast<int>()+2));
-    ASSERT_TRUE(data.set(instance, 1, data.get(instance, 1).cast<int>()+2));
-    ASSERT_TRUE(data.set(instance, 2, data.get(instance, 2).cast<int>()+2));
+    ASSERT_TRUE(data.set(instance, 0, data.get(instance, 0).cast<int>() + 2));
+    ASSERT_TRUE(data.set(instance, 1, data.get(instance, 1).cast<int>() + 2));
+    ASSERT_TRUE(data.set(instance, 2, data.get(instance, 2).cast<int>() + 2));
     ASSERT_EQ(data.get(instance, 0).cast<int>(), 5);
     ASSERT_EQ(data.get(instance, 1).cast<int>(), 7);
     ASSERT_EQ(data.get(instance, 2).cast<int>(), 9);
 }
 
-TEST_F(Meta, MetaDataAsVoid) {
+TEST_F(Meta, MetaDataAsVoid)
+{
     std::hash<std::string_view> hash{};
     auto data = meta::resolve<data_type>().data(hash("v"));
     data_type instance{};
@@ -1408,7 +1529,8 @@ TEST_F(Meta, MetaDataAsVoid) {
     ASSERT_EQ(data.get(instance), meta::any{std::in_place_type<void>});
 }
 
-TEST_F(Meta, MetaDataAsAlias) {
+TEST_F(Meta, MetaDataAsAlias)
+{
     std::hash<std::string_view> hash{};
     data_type instance{};
     auto h_data = meta::resolve<data_type>().data(hash("h"));
@@ -1423,7 +1545,8 @@ TEST_F(Meta, MetaDataAsAlias) {
     ASSERT_EQ(instance.i, 3);
 }
 
-TEST_F(Meta, MetaFunc) {
+TEST_F(Meta, MetaFunc)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("f2"));
     func_type instance{};
@@ -1448,11 +1571,11 @@ TEST_F(Meta, MetaFunc) {
     ASSERT_EQ(any.cast<int>(), 4);
     ASSERT_EQ(func_type::value, 3);
 
-    func.prop([](auto prop) {
+    func.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE(func.prop(properties::prop_int));
 
@@ -1463,7 +1586,8 @@ TEST_F(Meta, MetaFunc) {
     ASSERT_FALSE(prop.value().cast<bool>());
 }
 
-TEST_F(Meta, MetaFuncConst) {
+TEST_F(Meta, MetaFuncConst)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("f1"));
     func_type instance{};
@@ -1485,11 +1609,11 @@ TEST_F(Meta, MetaFuncConst) {
     ASSERT_EQ(any.type(), meta::resolve<int>());
     ASSERT_EQ(any.cast<int>(), 16);
 
-    func.prop([](auto prop) {
+    func.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE(func.prop(properties::prop_int));
 
@@ -1500,7 +1624,8 @@ TEST_F(Meta, MetaFuncConst) {
     ASSERT_FALSE(prop.value().cast<bool>());
 }
 
-TEST_F(Meta, MetaFuncRetVoid) {
+TEST_F(Meta, MetaFuncRetVoid)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("g"));
     func_type instance{};
@@ -1520,11 +1645,11 @@ TEST_F(Meta, MetaFuncRetVoid) {
     ASSERT_EQ(any.type(), meta::resolve<void>());
     ASSERT_EQ(func_type::value, 25);
 
-    func.prop([](auto prop) {
+    func.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE(func.prop(properties::prop_int));
 
@@ -1535,7 +1660,8 @@ TEST_F(Meta, MetaFuncRetVoid) {
     ASSERT_FALSE(prop.value().cast<bool>());
 }
 
-TEST_F(Meta, MetaFuncStatic) {
+TEST_F(Meta, MetaFuncStatic)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("h"));
     func_type::value = 2;
@@ -1557,11 +1683,11 @@ TEST_F(Meta, MetaFuncStatic) {
     ASSERT_EQ(any.type(), meta::resolve<int>());
     ASSERT_EQ(any.cast<int>(), 6);
 
-    func.prop([](auto prop) {
+    func.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE(func.prop(properties::prop_int));
 
@@ -1572,7 +1698,8 @@ TEST_F(Meta, MetaFuncStatic) {
     ASSERT_FALSE(prop.value().cast<bool>());
 }
 
-TEST_F(Meta, MetaFuncStaticRetVoid) {
+TEST_F(Meta, MetaFuncStaticRetVoid)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("k"));
 
@@ -1591,11 +1718,11 @@ TEST_F(Meta, MetaFuncStaticRetVoid) {
     ASSERT_EQ(any.type(), meta::resolve<void>());
     ASSERT_EQ(func_type::value, 42);
 
-    func.prop([](auto *prop) {
+    func.prop([](auto *prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop->key(), properties::prop_bool);
-        ASSERT_FALSE(prop->value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop->value().template cast<bool>()); });
 
     ASSERT_FALSE(func.prop(properties::prop_int));
 
@@ -1606,7 +1733,8 @@ TEST_F(Meta, MetaFuncStaticRetVoid) {
     ASSERT_FALSE(prop.value().cast<bool>());
 }
 
-TEST_F(Meta, MetaFuncMetaAnyArgs) {
+TEST_F(Meta, MetaFuncMetaAnyArgs)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("f1"));
     func_type instance;
@@ -1618,7 +1746,8 @@ TEST_F(Meta, MetaFuncMetaAnyArgs) {
     ASSERT_EQ(any.cast<int>(), 9);
 }
 
-TEST_F(Meta, MetaFuncInvalidArgs) {
+TEST_F(Meta, MetaFuncInvalidArgs)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("f1"));
     empty_type instance;
@@ -1626,7 +1755,8 @@ TEST_F(Meta, MetaFuncInvalidArgs) {
     ASSERT_FALSE(func.invoke(instance, meta::any{'c'}));
 }
 
-TEST_F(Meta, MetaFuncCastAndConvert) {
+TEST_F(Meta, MetaFuncCastAndConvert)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("f3"));
     func_type instance;
@@ -1638,7 +1768,8 @@ TEST_F(Meta, MetaFuncCastAndConvert) {
     ASSERT_EQ(any.cast<int>(), 9);
 }
 
-TEST_F(Meta, MetaFuncAsVoid) {
+TEST_F(Meta, MetaFuncAsVoid)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("v"));
     func_type instance{};
@@ -1648,7 +1779,8 @@ TEST_F(Meta, MetaFuncAsVoid) {
     ASSERT_EQ(instance.value, 42);
 }
 
-TEST_F(Meta, MetaFuncAsAlias) {
+TEST_F(Meta, MetaFuncAsAlias)
+{
     std::hash<std::string_view> hash{};
     func_type instance{};
     auto func = meta::resolve<func_type>().func(hash("a"));
@@ -1658,7 +1790,8 @@ TEST_F(Meta, MetaFuncAsAlias) {
     ASSERT_EQ(instance.value, 3);
 }
 
-TEST_F(Meta, MetaFuncByReference) {
+TEST_F(Meta, MetaFuncByReference)
+{
     std::hash<std::string_view> hash{};
     auto func = meta::resolve<func_type>().func(hash("h"));
     func_type::value = 2;
@@ -1671,17 +1804,18 @@ TEST_F(Meta, MetaFuncByReference) {
     ASSERT_EQ(value, 8);
 }
 
-TEST_F(Meta, MetaType) {
+TEST_F(Meta, MetaType)
+{
     auto type = meta::resolve<derived_type>();
 
     ASSERT_TRUE(type);
     ASSERT_NE(type, meta::type{});
 
-    type.prop([](auto prop) {
+    type.prop([](auto prop)
+              {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_int);
-        ASSERT_EQ(prop.value(), 99);
-    });
+        ASSERT_EQ(prop.value(), 99); });
 
     ASSERT_FALSE(type.prop(properties::prop_bool));
 
@@ -1692,7 +1826,8 @@ TEST_F(Meta, MetaType) {
     ASSERT_EQ(prop.value(), 99);
 }
 
-TEST_F(Meta, MetaTypeTraits) {
+TEST_F(Meta, MetaTypeTraits)
+{
     ASSERT_TRUE(meta::resolve<void>().is_void());
     ASSERT_TRUE(meta::resolve<bool>().is_integral());
     ASSERT_TRUE(meta::resolve<double>().is_floating_point());
@@ -1705,34 +1840,37 @@ TEST_F(Meta, MetaTypeTraits) {
     ASSERT_TRUE(meta::resolve<decltype(&func_type::g)>().is_member_function_pointer());
 }
 
-TEST_F(Meta, MetaTypeRemovePointer) {
+TEST_F(Meta, MetaTypeRemovePointer)
+{
     ASSERT_EQ(meta::resolve<void *>().remove_pointer(), meta::resolve<void>());
-    ASSERT_EQ(meta::resolve<int(*)(char, double)>().remove_pointer(), meta::resolve<int(char, double)>());
+    ASSERT_EQ(meta::resolve<int (*)(char, double)>().remove_pointer(), meta::resolve<int(char, double)>());
     ASSERT_EQ(meta::resolve<derived_type>().remove_pointer(), meta::resolve<derived_type>());
 }
 
-TEST_F(Meta, MetaTypeBase) {
+TEST_F(Meta, MetaTypeBase)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<derived_type>();
     bool iterate = false;
 
-    type.base([&iterate](auto base) {
+    type.base([&iterate](auto base)
+              {
         ASSERT_EQ(base.type(), meta::resolve<base_type>());
-        iterate = true;
-    });
+        iterate = true; });
 
     ASSERT_TRUE(iterate);
     ASSERT_EQ(type.base(hash("base")).type(), meta::resolve<base_type>());
 }
 
-TEST_F(Meta, MetaTypeConv) {
+TEST_F(Meta, MetaTypeConv)
+{
     auto type = meta::resolve<double>();
     bool iterate = false;
 
-    type.conv([&iterate](auto conv) {
+    type.conv([&iterate](auto conv)
+              {
         ASSERT_EQ(conv.type(), meta::resolve<int>());
-        iterate = true;
-    });
+        iterate = true; });
 
     ASSERT_TRUE(iterate);
 
@@ -1742,51 +1880,53 @@ TEST_F(Meta, MetaTypeConv) {
     ASSERT_FALSE(type.conv<char>());
 }
 
-TEST_F(Meta, MetaTypeCtor) {
+TEST_F(Meta, MetaTypeCtor)
+{
     auto type = meta::resolve<derived_type>();
     int counter{};
 
-    type.ctor([&counter](auto) {
-        ++counter;
-    });
+    type.ctor([&counter](auto)
+              { ++counter; });
 
     ASSERT_EQ(counter, 2);
     ASSERT_TRUE((type.ctor<const base_type &, int>()));
     ASSERT_TRUE((type.ctor<const derived_type &, double>()));
 }
 
-TEST_F(Meta, MetaTypeDtor) {
+TEST_F(Meta, MetaTypeDtor)
+{
     ASSERT_TRUE(meta::resolve<fat_type>().dtor());
     ASSERT_FALSE(meta::resolve<int>().dtor());
 }
 
-TEST_F(Meta, MetaTypeData) {
+TEST_F(Meta, MetaTypeData)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<data_type>();
     int counter{};
 
-    type.data([&counter](auto) {
-        ++counter;
-    });
+    type.data([&counter](auto)
+              { ++counter; });
 
     ASSERT_EQ(counter, 6);
     ASSERT_TRUE(type.data(hash("i")));
 }
 
-TEST_F(Meta, MetaTypeFunc) {
+TEST_F(Meta, MetaTypeFunc)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<func_type>();
     int counter{};
 
-    type.func([&counter](auto) {
-        ++counter;
-    });
+    type.func([&counter](auto)
+              { ++counter; });
 
     ASSERT_EQ(counter, 8);
     ASSERT_TRUE(type.func(hash("f1")));
 }
 
-TEST_F(Meta, MetaTypeConstruct) {
+TEST_F(Meta, MetaTypeConstruct)
+{
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(base_type{}, 42, 'c');
 
@@ -1796,7 +1936,23 @@ TEST_F(Meta, MetaTypeConstruct) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaTypeConstructMetaAnyArgs) {
+TEST_F(Meta, MetaTypeMakeBase)
+{
+    std::hash<std::string_view> hash{};
+
+    auto type = meta::resolve<derived_type>();
+
+    auto any = type.construct(base_type{}, 42, 'c');
+    ASSERT_TRUE(any);
+
+    ASSERT_TRUE(type.func(hash("make_base")));
+    auto sp = type.func(hash("make_base")).invoke(any.cast<base_type>()).cast<std::shared_ptr<base_type>>();
+
+    ASSERT_EQ(sp->dumb_fn(), 1);
+}
+
+TEST_F(Meta, MetaTypeConstructMetaAnyArgs)
+{
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(meta::any{base_type{}}, meta::any{42}, meta::any{'c'});
 
@@ -1806,19 +1962,22 @@ TEST_F(Meta, MetaTypeConstructMetaAnyArgs) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaTypeConstructInvalidArgs) {
+TEST_F(Meta, MetaTypeConstructInvalidArgs)
+{
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(meta::any{base_type{}}, meta::any{'c'}, meta::any{42});
     ASSERT_FALSE(any);
 }
 
-TEST_F(Meta, MetaTypeLessArgs) {
+TEST_F(Meta, MetaTypeLessArgs)
+{
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(base_type{});
     ASSERT_FALSE(any);
 }
 
-TEST_F(Meta, MetaTypeConstructCastAndConvert) {
+TEST_F(Meta, MetaTypeConstructCastAndConvert)
+{
     auto type = meta::resolve<derived_type>();
     auto any = type.construct(meta::any{derived_type{}}, meta::any{42.}, meta::any{'c'});
 
@@ -1828,7 +1987,8 @@ TEST_F(Meta, MetaTypeConstructCastAndConvert) {
     ASSERT_EQ(any.cast<derived_type>().c, 'c');
 }
 
-TEST_F(Meta, MetaTypeDestroyDtor) {
+TEST_F(Meta, MetaTypeDestroyDtor)
+{
     auto type = meta::resolve<empty_type>();
     empty_type instance;
 
@@ -1837,7 +1997,8 @@ TEST_F(Meta, MetaTypeDestroyDtor) {
     ASSERT_EQ(empty_type::counter, 1);
 }
 
-TEST_F(Meta, MetaTypeDestroyDtorInvalidArg) {
+TEST_F(Meta, MetaTypeDestroyDtorInvalidArg)
+{
     auto type = meta::resolve<empty_type>();
     auto instance = 'c';
 
@@ -1846,7 +2007,8 @@ TEST_F(Meta, MetaTypeDestroyDtorInvalidArg) {
     ASSERT_EQ(empty_type::counter, 0);
 }
 
-TEST_F(Meta, MetaTypeDestroyDtorCastAndConvert) {
+TEST_F(Meta, MetaTypeDestroyDtorCastAndConvert)
+{
     auto type = meta::resolve<empty_type>();
     fat_type instance{};
 
@@ -1855,26 +2017,31 @@ TEST_F(Meta, MetaTypeDestroyDtorCastAndConvert) {
     ASSERT_EQ(empty_type::counter, 0);
 }
 
-TEST_F(Meta, MetaTypeDestroyNoDtor) {
+TEST_F(Meta, MetaTypeDestroyNoDtor)
+{
     auto instance = 'c';
     ASSERT_TRUE(meta::resolve<char>().destroy(instance));
 }
 
-TEST_F(Meta, MetaTypeDestroyNoDtorInvalidArg) {
+TEST_F(Meta, MetaTypeDestroyNoDtorInvalidArg)
+{
     auto instance = 42;
     ASSERT_FALSE(meta::resolve<char>().destroy(instance));
 }
 
-TEST_F(Meta, MetaTypeDestroyNoDtorVoid) {
+TEST_F(Meta, MetaTypeDestroyNoDtorVoid)
+{
     ASSERT_FALSE(meta::resolve<void>().destroy({}));
 }
 
-TEST_F(Meta, MetaTypeDestroyNoDtorCastAndConvert) {
+TEST_F(Meta, MetaTypeDestroyNoDtorCastAndConvert)
+{
     auto instance = 42.;
     ASSERT_FALSE(meta::resolve<int>().destroy(instance));
 }
 
-TEST_F(Meta, MetaDataFromBase) {
+TEST_F(Meta, MetaDataFromBase)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<concrete_type>();
     concrete_type instance;
@@ -1890,7 +2057,8 @@ TEST_F(Meta, MetaDataFromBase) {
     ASSERT_EQ(instance.j, 'c');
 }
 
-TEST_F(Meta, MetaFuncFromBase) {
+TEST_F(Meta, MetaFuncFromBase)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<concrete_type>();
     auto base = meta::resolve<an_abstract_type>();
@@ -1918,7 +2086,8 @@ TEST_F(Meta, MetaFuncFromBase) {
     ASSERT_EQ(instance.i, -3);
 }
 
-TEST_F(Meta, MetaPropFromBase) {
+TEST_F(Meta, MetaPropFromBase)
+{
     auto type = meta::resolve<concrete_type>();
     auto prop_bool = type.prop(properties::prop_bool);
     auto prop_int = type.prop(properties::prop_int);
@@ -1930,7 +2099,8 @@ TEST_F(Meta, MetaPropFromBase) {
     ASSERT_EQ(prop_int.value().cast<int>(), 42);
 }
 
-TEST_F(Meta, AbstractClass) {
+TEST_F(Meta, AbstractClass)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<an_abstract_type>();
     concrete_type instance;
@@ -1946,7 +2116,8 @@ TEST_F(Meta, AbstractClass) {
     ASSERT_EQ(instance.i, -3);
 }
 
-TEST_F(Meta, EnumAndNamedConstants) {
+TEST_F(Meta, EnumAndNamedConstants)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<properties>();
 
@@ -1963,7 +2134,8 @@ TEST_F(Meta, EnumAndNamedConstants) {
     ASSERT_EQ(type.data(hash("prop_int")).get({}).cast<properties>(), properties::prop_int);
 }
 
-TEST_F(Meta, ArithmeticTypeAndNamedConstants) {
+TEST_F(Meta, ArithmeticTypeAndNamedConstants)
+{
     std::hash<std::string_view> hash{};
     auto type = meta::resolve<unsigned int>();
 
@@ -1980,7 +2152,8 @@ TEST_F(Meta, ArithmeticTypeAndNamedConstants) {
     ASSERT_EQ(type.data(hash("max")).get({}).cast<unsigned int>(), 100u);
 }
 
-TEST_F(Meta, Variables) {
+TEST_F(Meta, Variables)
+{
     std::hash<std::string_view> hash{};
     auto p_data = meta::resolve<properties>().data(hash("value"));
     auto c_data = meta::resolve(hash("char")).data(hash("value"));
@@ -1997,7 +2170,8 @@ TEST_F(Meta, Variables) {
     ASSERT_EQ(c, 'x');
 }
 
-TEST_F(Meta, Unregister) {
+TEST_F(Meta, Unregister)
+{
     std::hash<std::string_view> hash{};
 
     ASSERT_FALSE(meta::unregister<float>());
@@ -2039,11 +2213,11 @@ TEST_F(Meta, Unregister) {
     ASSERT_FALSE(meta::resolve(hash("derived")));
     ASSERT_TRUE(meta::resolve(hash("my_type")));
 
-    meta::resolve<derived_type>().prop([](auto prop) {
+    meta::resolve<derived_type>().prop([](auto prop)
+                                       {
         ASSERT_TRUE(prop);
         ASSERT_EQ(prop.key(), properties::prop_bool);
-        ASSERT_FALSE(prop.value().template cast<bool>());
-    });
+        ASSERT_FALSE(prop.value().template cast<bool>()); });
 
     ASSERT_FALSE((meta::resolve<derived_type>().ctor<const base_type &, int, char>()));
     ASSERT_TRUE((meta::resolve<derived_type>().ctor<>()));
