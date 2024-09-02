@@ -1559,6 +1559,15 @@ public:
     {}
 
     /**
+     * @brief Returns meta's internal identifier.
+     *
+     * @return The internal identifier of the meta type.
+     */
+    std::size_t internal_dentifier() const noexcept {
+        return node->identifier;
+    }
+
+    /**
      * @brief Indicates whether a given meta type refers to void or not.
      * @return True if the underlying type is void, false otherwise.
      */
@@ -1808,6 +1817,12 @@ public:
         return curr ? curr->clazz() : meta::data{};
     }
 
+    // FIXME: Not working
+    // template <auto Data>
+    // meta::data data() const noexcept {
+    //     return meta::data{};
+    // }
+
     /**
      * @brief Iterates all the meta functions of a meta type.
      *
@@ -1971,6 +1986,16 @@ public:
      */
     bool operator==(const type &other) const noexcept {
         return node == other.node;
+    }
+
+    /**
+     * @brief If a name property was set, returns the name property of the underlying type.
+     * @return The name property of the underlying type, if any.
+     */
+    std::string get_name() const noexcept {
+        std::hash<std::string_view> hash;
+        auto property = prop(hash("name"));
+        return property ? property.value().cast<std::string>() : "";
     }
 
 private:

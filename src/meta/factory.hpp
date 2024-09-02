@@ -1023,6 +1023,31 @@ inline std::vector<std::string_view> get_all_names(const meta::type& type)
 }
 
 
+/**
+ * @brief Helper function to create a property.
+ *
+ * @tparam T The type of the property value.
+ * @param name A string name to use as identifier for the property.
+ * @param value The value of the property.
+ * @return A property pair to pass to the reflect function.
+ */
+template <typename T>
+inline std::pair<std::size_t, T> make_property(const std::string_view& name, const T& value)
+{
+    std::hash<std::string_view> hash{};
+    return std::make_pair(hash(name), value);
+}
+
+/**
+ * @brief Helper function to create a name property.
+ *
+ * @param name The name to add as a property.
+ * @return A property pair to pass to the reflect function.
+ */
+inline std::pair<std::size_t, std::string_view> make_name_property(const std::string_view& name)
+{
+    return make_property("name", std::forward<const std::string_view&>(name));
+}
 
 }
 

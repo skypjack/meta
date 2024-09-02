@@ -2207,6 +2207,19 @@ TEST_F(Meta, ConstructShared)
     ASSERT_EQ(sp->dumb_fn(), 1);
 }
 
+TEST_F(Meta, MetaDataIndex)
+{
+    // std::hash<std::string_view> hash{};
+    // auto data = meta::resolve<data_type>().data<&data_type::i>();
+    // meta::any any{data_type{}};
+    // any.cast<data_type>().i = 99;
+    // const auto value = data.get(any);
+
+    // ASSERT_TRUE(value);
+    // ASSERT_TRUE(value.cast<int>());
+    // ASSERT_EQ(value.cast<int>(), 99);
+}
+
 TEST_F(Meta, Unregister)
 {
     std::hash<std::string_view> hash{};
