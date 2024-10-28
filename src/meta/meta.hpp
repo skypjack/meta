@@ -9,6 +9,7 @@
 #include <utility>
 #include <type_traits>
 #include <cassert>
+#include <string>
 
 
 namespace meta {
@@ -1563,7 +1564,7 @@ public:
      *
      * @return The internal identifier of the meta type.
      */
-    std::size_t internal_dentifier() const noexcept {
+    std::size_t identifier() const noexcept {
         return node->identifier;
     }
 

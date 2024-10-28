@@ -1032,10 +1032,10 @@ inline std::vector<std::string_view> get_all_names(const meta::type& type)
  * @return A property pair to pass to the reflect function.
  */
 template <typename T>
-inline std::pair<std::size_t, T> make_property(const std::string_view& name, const T& value)
+inline std::pair<std::size_t, T> make_property(const std::string_view& name, T value)
 {
     std::hash<std::string_view> hash{};
-    return std::make_pair(hash(name), value);
+    return std::make_pair(hash(name), std::forward<T>(value));
 }
 
 /**
